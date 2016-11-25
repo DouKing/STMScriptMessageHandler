@@ -1,0 +1,45 @@
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf8">
+            <script language="javascript">
+                
+            function viewWillAppear() {
+                document.getElementById("returnValue").value += "viewWillAppear"
+            }
+            
+            function viewDidAppear() {
+                document.getElementById("returnValue").value += "viewDidAppear";
+            }
+            
+            function viewWillDisAppear() {
+                document.getElementById("returnValue").value += "viewWillDisAppear";
+            }
+            
+            function setRightButtons() {
+                window.webkit.messageHandlers.SetRightBarButtons.postMessage([{title:'按钮'}]);
+            }
+            
+            function handleRightButtonClick(index) {
+                asyncAlert(index.stringValue);
+            }
+
+            function asyncAlert(content) {
+                setTimeout(function(){
+                           alert(content);
+                           },1);
+            }
+            
+            </script>
+            </head>
+    
+    <body>
+        <h1>这是按钮调用</h1>
+        <input type="button" value="按钮" onclick="setRightButtons()" />
+        
+        <h1>这是回调结果展示区</h1>
+        <textarea id ="returnValue" type="value" rows="5" cols="40">
+        
+        </textarea>
+        
+    </body>
+</html>
