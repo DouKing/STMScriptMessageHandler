@@ -10,15 +10,19 @@
 #import <SDWebImage/UIButton+WebCache.h>
 #import "MDFWebPageSetting.h"
 
+static NSString * const kMDFWebViewObserverKeyPathTitle = @"title";
+static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimatedProgress";
+
 static NSString * const kMDFBarItemTitleKey = @"title";
 static NSString * const kMDFBarItemImageKey = @"image";
 static NSString * const kMFDBarItemImageURLKey = @"imageURL";
 static NSInteger const kMDFRightBarItemBaseTag = 3001;
 static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 
-@interface MDFWebViewController ()<MDFWebPageSettingDelegate>
+@interface MDFWebViewController ()<WKUIDelegate, MDFWebPageSettingDelegate>
 
 @property (nonatomic, strong, readwrite) WKWebView *webView;
+@property (nonatomic, strong) UIProgressView *progressView;
 @property (nonatomic, strong) NSMutableArray<NSString *> *jsMethods;
 
 @end
@@ -33,6 +37,7 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 @implementation MDFWebViewController
 
 - (void)dealloc {
+    [self _removeObser];
     [_webView stopLoading];
     for (NSString *name in _jsMethods) {
         [_webView.configuration.userContentController removeScriptMessageHandlerForName:name];
@@ -42,19 +47,20 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 - (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
-        [self registerJSMethods];
+        [self _initial];
     }
     return self;
 }
 
 - (void)awakeFromNib {
     [super awakeFromNib];
-    [self registerJSMethods];
+    [self _initial];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self.view addSubview:self.webView];
+    [self.view addSubview:self.progressView];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -75,6 +81,8 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     self.webView.frame = self.view.bounds;
+    self.progressView.frame = CGRectMake(0, CGRectGetMaxY(self.navigationController.navigationBar.frame),
+                                         CGRectGetWidth(self.navigationController.navigationBar.frame), 2);
 }
 
 - (void)addScriptMessageHandler:(__kindof MDFScriptMessageHandlerManager *)scriptMessageHandler {
@@ -96,9 +104,61 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 }
 
 #pragma mark - Private Methods
+- (void)_initial {
+    [self registerJSMethods];
+    [self _addObserver];
+}
 
+- (void)_addObserver {
+    [self.webView addObserver:self forKeyPath:kMDFWebViewObserverKeyPathTitle options:NSKeyValueObservingOptionNew context:nil];
+    [self.webView addObserver:self forKeyPath:kMDFWebViewObserverKeyPathEstimatedProgress options:NSKeyValueObservingOptionNew context:nil];
+}
 
-#pragma mark - Delegates
+- (void)_removeObser {
+    [self.webView removeObserver:self forKeyPath:kMDFWebViewObserverKeyPathTitle];
+    [self.webView removeObserver:self forKeyPath:kMDFWebViewObserverKeyPathEstimatedProgress];
+}
+
+- (void)_setProgressHidden:(BOOL)hidden animated:(BOOL)animated {
+    CGFloat alpha = hidden ? 0 : 1;
+    if (animated) {
+        [UIView animateWithDuration:0.2 animations:^{
+            self.progressView.alpha = alpha;
+        }];
+    } else {
+        self.progressView.alpha = alpha;
+    }
+    
+}
+
+#pragma mark - Delegates & Notifications
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
+    if ([keyPath isEqualToString:kMDFWebViewObserverKeyPathTitle]) {
+        self.navigationItem.title = [change objectForKey:NSKeyValueChangeNewKey];
+    } else if ([keyPath isEqualToString:kMDFWebViewObserverKeyPathEstimatedProgress]) {
+        double progress = [[change objectForKey:NSKeyValueChangeNewKey] doubleValue];
+        [self.progressView setProgress:progress animated:YES];
+        BOOL hidden = (progress >= 1);
+        [self _setProgressHidden:hidden animated:YES];
+        if (hidden) {
+            self.progressView.progress = 0;
+        }
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+
+#pragma mark - WKUIDelegate
+
+- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"提醒" message:message preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"知道了" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        completionHandler();
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
 #pragma mark - MDFWebPageSettingDelegate
 
 - (void)webPageSetting:(MDFWebPageSetting *)webPageSetting didReceiveScriptMessage:(WKScriptMessage *)message atUserContentController:(WKUserContentController *)userContentController {
@@ -128,8 +188,18 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
         config.preferences = preferences;
         
         _webView = [[WKWebView alloc] initWithFrame:CGRectZero configuration:config];
+        _webView.UIDelegate = self;
     }
     return _webView;
+}
+
+- (UIProgressView *)progressView {
+    if (!_progressView) {
+        _progressView = [[UIProgressView alloc] init];
+        _progressView.tintColor = [UIColor redColor];
+        _progressView.trackTintColor = [UIColor lightGrayColor];
+    }
+    return _progressView;
 }
 
 - (NSMutableArray<NSString *> *)jsMethods {

@@ -2,33 +2,36 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf8">
             <script language="javascript">
-                
-            function viewWillAppear() {
-                document.getElementById("returnValue").value = "viewWillAppear"
-            }
-            
-            function viewDidAppear() {
-                document.getElementById("returnValue").value = "viewDidAppear";
-            }
-            
-            function viewWillDisAppear() {
-                document.getElementById("returnValue").value = "viewWillDisAppear";
-            }
-            
-            function setRightButtons() {
-                window.webkit.messageHandlers.SetRightBarButtons.postMessage([{title:'按钮'}]);
-            }
-            
-            function handleRightButtonClick(index) {
-                asyncAlert(index.stringValue);
-            }
 
-            function asyncAlert(content) {
-                setTimeout(function(){
-                           alert(content);
-                           },1);
-            }
-            
+                function viewWillAppear() {
+                    setText("viewWillAppear");
+                }
+
+                function viewDidAppear() {
+                    setText("viewDidAppear");
+                }
+
+                function viewWillDisAppear() {
+                    setText("viewWillDisAppear");
+                }
+
+                function setRightButtons() {
+                    window.webkit.messageHandlers.SetRightBarButtons.postMessage([{title:'按钮'}]);
+                }
+
+                function handleRightButtonClick(index) {
+                    asyncAlert(index);
+                }
+
+                function asyncAlert(content) {
+                    setTimeout(function(){
+                        alert(content);
+                    },1);
+                }
+
+                function setText(content) {
+                    document.getElementById("returnValue").innerHTML = content;
+                }
             </script>
             </head>
     
@@ -37,7 +40,7 @@
         <input type="button" value="按钮" onclick="setRightButtons()" />
         
         <h1>这是回调结果展示区</h1>
-        <textarea id ="returnValue" type="value" rows="5" cols="40">
+        <p id="returnValue">这是一个段落</p>
         
         </textarea>
         

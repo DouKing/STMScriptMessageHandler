@@ -18,6 +18,8 @@
     [super viewDidLoad];
     NSString *path = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
     [self.webView loadHTMLString:[NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil] baseURL:nil];
+    
+//    [self.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://www.baidu.com"]]];
 }
 
 - (void)didReceiveMemoryWarning {
