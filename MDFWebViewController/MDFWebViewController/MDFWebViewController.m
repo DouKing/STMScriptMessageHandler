@@ -19,6 +19,7 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 @interface MDFWebViewController ()<MDFWebPageSettingDelegate>
 
 @property (nonatomic, strong, readwrite) WKWebView *webView;
+@property (nonatomic, strong) NSMutableArray<NSString *> *jsMethods;
 
 @end
 
@@ -30,6 +31,13 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 @end
 
 @implementation MDFWebViewController
+
+- (void)dealloc {
+    [_webView stopLoading];
+    for (NSString *name in _jsMethods) {
+        [_webView.configuration.userContentController removeScriptMessageHandlerForName:name];
+    }
+}
 
 - (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
@@ -69,14 +77,22 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
     self.webView.frame = self.view.bounds;
 }
 
-- (void)addScriptMessageHandler:(__kindof MDFWebViewJSManager *)scriptMessageHandler {
-    
+- (void)addScriptMessageHandler:(__kindof MDFScriptMessageHandlerManager *)scriptMessageHandler {
+    scriptMessageHandler.webView = self.webView;
+    WKUserContentController *userContentController = self.webView.configuration.userContentController;
+    __weak typeof(self) weakSelf = self;
+    [[scriptMessageHandler jsMethodNames] enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [userContentController removeScriptMessageHandlerForName:obj];
+        [userContentController addScriptMessageHandler:scriptMessageHandler name:obj];
+        [strongSelf.jsMethods addObject:obj];
+    }];
 }
 
 - (void)registerJSMethods {
-//    MDFWebPageSetting *webPageSetting = [[MDFWebPageSetting alloc] init];
-//    webPageSetting.delegate = self;
-//    [self addScriptMessageHandler:webPageSetting];
+    MDFWebPageSetting *webPageSetting = [[MDFWebPageSetting alloc] init];
+    webPageSetting.delegate = self;
+    [self addScriptMessageHandler:webPageSetting];
 }
 
 #pragma mark - Private Methods
@@ -116,6 +132,13 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
     return _webView;
 }
 
+- (NSMutableArray<NSString *> *)jsMethods {
+    if (!_jsMethods) {
+        _jsMethods = [NSMutableArray array];
+    }
+    return _jsMethods;
+}
+
 @end
 
 @implementation MDFWebViewController (NavigationBarButton)
@@ -134,7 +157,8 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 }
 
 - (void)_handleLeftBarButtonItemAction:(UIBarButtonItem *)sender {
-    
+    NSString *action = [NSString stringWithFormat:@"handleLeftButtonClick('%ld')", sender.tag - kMDFRightBarItemBaseTag];
+    [self.webView evaluateJavaScript:action completionHandler:nil];
 }
 
 - (void)_setupNavigationBarButtonItems:(NSArray<NSDictionary *> *)items onRight:(BOOL)flag {

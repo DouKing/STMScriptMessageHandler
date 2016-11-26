@@ -17,7 +17,7 @@
 		0005FA4F1DE5A6BC006EF1C7 /* MDFWebPageSetting.m in Sources */ = {isa = PBXBuildFile; fileRef = 0005FA4E1DE5A6BC006EF1C7 /* MDFWebPageSetting.m */; };
 		0005FA541DE5A95A006EF1C7 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 0005FA531DE5A95A006EF1C7 /* index.html */; };
 		0005FA571DE5A9EB006EF1C7 /* DemoViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0005FA561DE5A9EB006EF1C7 /* DemoViewController.m */; };
-		0005FA771DE8231C006EF1C7 /* MDFWebViewJSManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0005FA761DE8231C006EF1C7 /* MDFWebViewJSManager.m */; };
+		0005FA771DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0005FA761DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.m */; };
 		74858629FEE2092CD838D2BE /* libPods-MDFWebViewController.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A4E98B87DE8472533ECC5321 /* libPods-MDFWebViewController.a */; };
 /* End PBXBuildFile section */
 
@@ -40,8 +40,8 @@
 		0005FA531DE5A95A006EF1C7 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
 		0005FA551DE5A9EB006EF1C7 /* DemoViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoViewController.h; sourceTree = "<group>"; };
 		0005FA561DE5A9EB006EF1C7 /* DemoViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DemoViewController.m; sourceTree = "<group>"; };
-		0005FA751DE8231C006EF1C7 /* MDFWebViewJSManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDFWebViewJSManager.h; sourceTree = "<group>"; };
-		0005FA761DE8231C006EF1C7 /* MDFWebViewJSManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDFWebViewJSManager.m; sourceTree = "<group>"; };
+		0005FA751DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDFScriptMessageHandlerManager.h; sourceTree = "<group>"; };
+		0005FA761DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDFScriptMessageHandlerManager.m; sourceTree = "<group>"; };
 		2CFF9F7981A3E0C008FD489A /* Pods-MDFWebViewController.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MDFWebViewController.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MDFWebViewController/Pods-MDFWebViewController.debug.xcconfig"; sourceTree = "<group>"; };
 		649F0500104EE70E0BAC44D3 /* Pods-MDFWebViewController.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MDFWebViewController.release.xcconfig"; path = "Pods/Target Support Files/Pods-MDFWebViewController/Pods-MDFWebViewController.release.xcconfig"; sourceTree = "<group>"; };
 		A4E98B87DE8472533ECC5321 /* libPods-MDFWebViewController.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MDFWebViewController.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -110,8 +110,8 @@
 			children = (
 				0005FA4A1DE5A693006EF1C7 /* MDFWebViewController.h */,
 				0005FA4B1DE5A693006EF1C7 /* MDFWebViewController.m */,
-				0005FA751DE8231C006EF1C7 /* MDFWebViewJSManager.h */,
-				0005FA761DE8231C006EF1C7 /* MDFWebViewJSManager.m */,
+				0005FA751DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.h */,
+				0005FA761DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.m */,
 				0005FA4D1DE5A6BC006EF1C7 /* MDFWebPageSetting.h */,
 				0005FA4E1DE5A6BC006EF1C7 /* MDFWebPageSetting.m */,
 			);
@@ -266,7 +266,7 @@
 				0005FA571DE5A9EB006EF1C7 /* DemoViewController.m in Sources */,
 				0005FA4F1DE5A6BC006EF1C7 /* MDFWebPageSetting.m in Sources */,
 				0005FA341DE5A656006EF1C7 /* main.m in Sources */,
-				0005FA771DE8231C006EF1C7 /* MDFWebViewJSManager.m in Sources */,
+				0005FA771DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

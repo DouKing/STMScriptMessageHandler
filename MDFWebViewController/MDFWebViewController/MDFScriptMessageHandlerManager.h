@@ -12,11 +12,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 
-@interface MDFWebViewJSManager : NSObject<WKScriptMessageHandler>
+@interface MDFScriptMessageHandlerManager : NSObject<WKScriptMessageHandler>
 
-@property (nullable, nonatomic, weak, readonly) WKWebView *webView;
-
-- (instancetype)initWithWebView:(WKWebView *)webView;
+@property (nullable, nonatomic, weak) WKWebView *webView;
 
 - (nullable NSArray<NSString *> *)jsMethodNames;
 

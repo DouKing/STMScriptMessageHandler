@@ -8,7 +8,7 @@
 
 @import WebKit;
 @import UIKit;
-#import "MDFWebViewJSManager.h"
+#import "MDFScriptMessageHandlerManager.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -17,7 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong, readonly) WKWebView *webView;
 
-- (void)addScriptMessageHandler:(__kindof MDFWebViewJSManager *)scriptMessageHandler;
+- (void)addScriptMessageHandler:(__kindof MDFScriptMessageHandlerManager *)scriptMessageHandler;
 
 - (void)registerJSMethods;
 

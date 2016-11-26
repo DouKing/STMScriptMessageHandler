@@ -6,7 +6,7 @@
 //  Copyright © 2016年 secoo. All rights reserved.
 //
 
-#import "MDFWebViewJSManager.h"
+#import "MDFScriptMessageHandlerManager.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -20,7 +20,7 @@ extern NSString * const kMDFWebPageSettingJSMethodNameSetRightBarButtonsAction;
 
 @end
 
-@interface MDFWebPageSetting : MDFWebViewJSManager
+@interface MDFWebPageSetting : MDFScriptMessageHandlerManager
 
 @property (nonatomic, weak, nullable) id<MDFWebPageSettingDelegate> delegate;
 
