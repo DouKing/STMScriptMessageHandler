@@ -8,16 +8,23 @@
 
 #import "MDFScriptMessageHandlerManager.h"
 
+@interface MDFScriptMessageHandlerManager ()
+
+@end
+
 @implementation MDFScriptMessageHandlerManager
 
-- (NSArray<NSString *> *)jsMethodNames {
-    return @[];
-}
-
-#pragma mark - WKScriptMessageHandler
-
-- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
-    
+- (instancetype)initWithWebViewController:(MDFWebViewController *)webViewController {
+    self = [super init];
+    if (self) {
+        _webViewController = webViewController;
+        if ([self conformsToProtocol:@protocol(MDFScriptMessageHandlerProtocol)]) {
+            _child = (id<MDFScriptMessageHandlerProtocol>)self;
+        } else {
+            NSAssert(NO, @"子类必须遵守`MDFScriptMessageHandlerProtocol`这个协议");
+        }
+    }
+    return self;
 }
 
 @end

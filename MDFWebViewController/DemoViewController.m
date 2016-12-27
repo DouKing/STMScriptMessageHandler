@@ -27,10 +27,6 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void)registerJSMethods {
-    [super registerJSMethods];
-}
-
 /*
 #pragma mark - Navigation
 

@@ -7,30 +7,16 @@
 //
 
 #import "MDFWebViewController.h"
-#import <SDWebImage/UIButton+WebCache.h>
 #import "MDFWebPageSetting.h"
 
 static NSString * const kMDFWebViewObserverKeyPathTitle = @"title";
 static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimatedProgress";
 
-static NSString * const kMDFBarItemTitleKey = @"title";
-static NSString * const kMDFBarItemImageKey = @"image";
-static NSString * const kMFDBarItemImageURLKey = @"imageURL";
-static NSInteger const kMDFRightBarItemBaseTag = 3001;
-static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
-
-@interface MDFWebViewController ()<WKUIDelegate, MDFWebPageSettingDelegate>
+@interface MDFWebViewController ()<WKUIDelegate>
 
 @property (nonatomic, strong, readwrite) WKWebView *webView;
 @property (nonatomic, strong) UIProgressView *progressView;
-@property (nonatomic, strong) NSMutableArray<NSString *> *jsMethods;
-
-@end
-
-@interface MDFWebViewController (NavigationBarButton)
-
-- (void)_setupRightBarButtonItems:(NSArray<NSDictionary *> *)items;
-- (void)_setupLeftBarButtonItems:(NSArray<NSDictionary *> *)items;
+@property (nonatomic, strong) NSMutableArray<__kindof MDFScriptMessageHandlerManager *> *messageHandlers;
 
 @end
 
@@ -39,8 +25,8 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 - (void)dealloc {
     [self _removeObser];
     [_webView stopLoading];
-    for (NSString *name in _jsMethods) {
-        [_webView.configuration.userContentController removeScriptMessageHandlerForName:name];
+    for (MDFScriptMessageHandlerManager *messageHandler in _messageHandlers) {
+        [self _removeScriptMessageHandler:messageHandler];
     }
 }
 
@@ -63,11 +49,6 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
     [self.view addSubview:self.progressView];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-    [self.webView evaluateJavaScript:@"viewWillAppear()" completionHandler:nil];
-}
-
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     [self.webView evaluateJavaScript:@"viewDidAppear()" completionHandler:nil];
@@ -80,33 +61,42 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
+    [self.webView evaluateJavaScript:@"viewDidLayoutSubviews()" completionHandler:nil];
     self.webView.frame = self.view.bounds;
     self.progressView.frame = CGRectMake(0, CGRectGetMaxY(self.navigationController.navigationBar.frame),
                                          CGRectGetWidth(self.navigationController.navigationBar.frame), 2);
 }
 
-- (void)addScriptMessageHandler:(__kindof MDFScriptMessageHandlerManager *)scriptMessageHandler {
-    scriptMessageHandler.webView = self.webView;
-    WKUserContentController *userContentController = self.webView.configuration.userContentController;
-    __weak typeof(self) weakSelf = self;
-    [[scriptMessageHandler jsMethodNames] enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [userContentController removeScriptMessageHandlerForName:obj];
-        [userContentController addScriptMessageHandler:scriptMessageHandler name:obj];
-        [strongSelf.jsMethods addObject:obj];
-    }];
-}
-
-- (void)registerJSMethods {
-    MDFWebPageSetting *webPageSetting = [[MDFWebPageSetting alloc] init];
-    webPageSetting.delegate = self;
-    [self addScriptMessageHandler:webPageSetting];
+- (void)registerScriptMessageHandlerClass:(Class)scriptMessageHandlerCls {
+    if (!scriptMessageHandlerCls) { return; }
+    MDFScriptMessageHandlerManager *msgHandler = [scriptMessageHandlerCls alloc];
+    if (![msgHandler isKindOfClass:[MDFScriptMessageHandlerManager class]]) {
+        return;
+    }
+    msgHandler = [msgHandler initWithWebViewController:self];
+    [self _addScriptMessageHandler:msgHandler];
+    [self.messageHandlers addObject:msgHandler];
 }
 
 #pragma mark - Private Methods
 - (void)_initial {
-    [self registerJSMethods];
+    [self registerScriptMessageHandlerClass:[MDFWebPageSetting class]];
     [self _addObserver];
+}
+
+- (void)_addScriptMessageHandler:(__kindof MDFScriptMessageHandlerManager*)messageHandler {
+    WKUserContentController *userContentController = self.webView.configuration.userContentController;
+    [[messageHandler.child jsMethodNames] enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [userContentController removeScriptMessageHandlerForName:obj];
+        [userContentController addScriptMessageHandler:messageHandler.child name:obj];
+    }];
+}
+
+- (void)_removeScriptMessageHandler:(__kindof MDFScriptMessageHandlerManager*)messageHandler {
+    WKUserContentController *userContentController = self.webView.configuration.userContentController;
+    [[messageHandler.child jsMethodNames] enumerateObjectsUsingBlock:^(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        [userContentController removeScriptMessageHandlerForName:obj];
+    }];
 }
 
 - (void)_addObserver {
@@ -128,7 +118,6 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
     } else {
         self.progressView.alpha = alpha;
     }
-    
 }
 
 #pragma mark - Delegates & Notifications
@@ -159,14 +148,15 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
     [self presentViewController:alert animated:YES completion:nil];
 }
 
-#pragma mark - MDFWebPageSettingDelegate
-
-- (void)webPageSetting:(MDFWebPageSetting *)webPageSetting didReceiveScriptMessage:(WKScriptMessage *)message atUserContentController:(WKUserContentController *)userContentController {
-    NSString *name = message.name;
-    if ([name isEqualToString:kMDFWebPageSettingJSMethodNameSetRightBarButtonsAction]) {
-        NSArray<NSDictionary *> *btns = message.body;
-        [self _setupRightBarButtonItems:btns];
-    }
+- (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL))completionHandler {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"提醒" message:message preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        completionHandler(YES);
+    }]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        completionHandler(NO);
+    }]];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 #pragma mark - setter & getter
@@ -202,73 +192,13 @@ static NSInteger const kMDFLeftBarItemBaseTag  = 1001;
     return _progressView;
 }
 
-- (NSMutableArray<NSString *> *)jsMethods {
-    if (!_jsMethods) {
-        _jsMethods = [NSMutableArray array];
+- (NSMutableArray<MDFScriptMessageHandlerManager *> *)messageHandlers {
+    if (!_messageHandlers) {
+        _messageHandlers = [NSMutableArray array];
     }
-    return _jsMethods;
+    return _messageHandlers;
 }
 
 @end
 
-@implementation MDFWebViewController (NavigationBarButton)
-
-- (void)_setupRightBarButtonItems:(NSArray<NSDictionary *> *)items {
-    [self _setupNavigationBarButtonItems:items onRight:YES];
-}
-
-- (void)_setupLeftBarButtonItems:(NSArray<NSDictionary *> *)items {
-    [self _setupNavigationBarButtonItems:items onRight:NO];
-}
-
-- (void)_handleRightBarButtonItemAction:(UIBarButtonItem *)sender {
-    NSString *action = [NSString stringWithFormat:@"handleRightButtonClick('%ld')", sender.tag - kMDFRightBarItemBaseTag];
-    [self.webView evaluateJavaScript:action completionHandler:nil];
-}
-
-- (void)_handleLeftBarButtonItemAction:(UIBarButtonItem *)sender {
-    NSString *action = [NSString stringWithFormat:@"handleLeftButtonClick('%ld')", sender.tag - kMDFRightBarItemBaseTag];
-    [self.webView evaluateJavaScript:action completionHandler:nil];
-}
-
-- (void)_setupNavigationBarButtonItems:(NSArray<NSDictionary *> *)items onRight:(BOOL)flag {
-    NSMutableArray<UIBarButtonItem *> *temp = [NSMutableArray arrayWithCapacity:items.count];
-    [items enumerateObjectsUsingBlock:^(NSDictionary * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSString *icon = obj[kMDFBarItemImageKey];  //图片代号
-        NSString *text = obj[kMDFBarItemTitleKey];  //按钮名字
-        NSString *url = obj[kMFDBarItemImageURLKey]; //图片URL
-        UIImage *image = [UIImage imageNamed:icon];
-        UIBarButtonItem *barButtonItem = nil;
-        SEL barButtonItemAction = flag ? @selector(_handleRightBarButtonItemAction:) : @selector(_handleLeftBarButtonItemAction:);
-        if (image) {
-            barButtonItem = [[UIBarButtonItem alloc] initWithImage:image style:UIBarButtonItemStylePlain target:self action:barButtonItemAction];
-        } else if (url.length) {
-            UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-            btn.frame = CGRectMake(0, 0, 22, 22);
-            if (flag) {
-                [btn setContentHorizontalAlignment:UIControlContentHorizontalAlignmentRight];
-            } else {
-                [btn setContentHorizontalAlignment:UIControlContentHorizontalAlignmentLeft];
-            }
-            [btn sd_setImageWithURL:[NSURL URLWithString:url] forState:UIControlStateNormal];
-            [btn addTarget:self action:barButtonItemAction forControlEvents:UIControlEventTouchUpInside];
-            barButtonItem = [[UIBarButtonItem alloc] initWithCustomView:btn];
-        } else {
-            barButtonItem = [[UIBarButtonItem alloc] initWithTitle:text style:UIBarButtonItemStylePlain target:self action:barButtonItemAction];
-        }
-        if (flag) {
-            barButtonItem.tag = kMDFRightBarItemBaseTag + idx;
-        } else {
-            barButtonItem.tag = kMDFLeftBarItemBaseTag + idx;
-        }
-        [temp addObject:barButtonItem];
-    }];
-    if (flag) {
-        self.navigationItem.rightBarButtonItems = [NSArray arrayWithArray:temp];
-    } else {
-        self.navigationItem.leftBarButtonItems = [NSArray arrayWithArray:temp];
-    }
-}
-
-@end
 

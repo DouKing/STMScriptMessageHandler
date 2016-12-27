@@ -6,17 +6,24 @@
 //  Copyright © 2016年 secoo. All rights reserved.
 //
 
-@import WebKit;
 @import Foundation;
+#import "MDFWebViewController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-
-@interface MDFScriptMessageHandlerManager : NSObject<WKScriptMessageHandler>
-
-@property (nullable, nonatomic, weak) WKWebView *webView;
+@protocol MDFScriptMessageHandlerProtocol <WKScriptMessageHandler>
 
 - (nullable NSArray<NSString *> *)jsMethodNames;
+
+@end
+
+
+@interface MDFScriptMessageHandlerManager : NSObject
+
+@property (nullable, nonatomic, weak, readonly) MDFWebViewController *webViewController;
+@property (nullable ,nonatomic, weak, readonly) id<MDFScriptMessageHandlerProtocol> child;
+
+- (instancetype)initWithWebViewController:(MDFWebViewController *)webViewController;
 
 @end
 
