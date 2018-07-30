@@ -15,8 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 @interface MDFWebViewController : UIViewController
 
 @property (nonatomic, strong, readonly) WKWebView *webView;
+@property (nullable, nonatomic, strong) UIColor *progressTintColor;
+@property (nullable, nonatomic, strong) UIColor *progressTrackTintColor;
 
-- (void)registerScriptMessageHandlerClass:(nullable Class)scriptMessageHandlerCls;
+- (nullable NSArray<Class> *)scriptMessageHandlerClass;
 
 @end
 

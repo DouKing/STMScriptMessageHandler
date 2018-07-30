@@ -7,7 +7,7 @@
 //
 
 #import "MDFWebViewController.h"
-#import "MDFWebPageSetting.h"
+#import "MDFScriptMessageHandlerManager.h"
 
 static NSString * const kMDFWebViewObserverKeyPathTitle = @"title";
 static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimatedProgress";
@@ -78,9 +78,17 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     [self.messageHandlers addObject:msgHandler];
 }
 
+- (NSArray<Class> *)scriptMessageHandlerClass {
+    return nil;
+}
+
 #pragma mark - Private Methods
 - (void)_initial {
-    [self registerScriptMessageHandlerClass:[MDFWebPageSetting class]];
+    __weak typeof(self) __weak_self__ = self;
+    [self.scriptMessageHandlerClass enumerateObjectsUsingBlock:^(Class  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        __strong typeof(__weak_self__) self = __weak_self__;
+        [self registerScriptMessageHandlerClass:obj];
+    }];
     [self _addObserver];
 }
 
@@ -197,6 +205,16 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
         _messageHandlers = [NSMutableArray array];
     }
     return _messageHandlers;
+}
+
+- (void)setProgressTintColor:(UIColor *)progressTintColor {
+    _progressTintColor = progressTintColor;
+    self.progressView.tintColor = progressTintColor;
+}
+
+- (void)setProgressTrackTintColor:(UIColor *)progressTrackTintColor {
+    _progressTrackTintColor = progressTrackTintColor;
+    self.progressView.trackTintColor = progressTrackTintColor;
 }
 
 @end

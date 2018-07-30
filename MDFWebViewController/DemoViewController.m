@@ -7,6 +7,7 @@
 //
 
 #import "DemoViewController.h"
+#import "MDFWebPageSetting.h"
 
 @interface DemoViewController ()
 
@@ -25,6 +26,10 @@
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+- (NSArray<Class> *)scriptMessageHandlerClass {
+    return @[MDFWebPageSetting.class];
 }
 
 /*

@@ -85,6 +85,8 @@
 				0005FA361DE5A656006EF1C7 /* AppDelegate.m */,
 				0005FA381DE5A656006EF1C7 /* ViewController.h */,
 				0005FA391DE5A656006EF1C7 /* ViewController.m */,
+				0005FA4D1DE5A6BC006EF1C7 /* MDFWebPageSetting.h */,
+				0005FA4E1DE5A6BC006EF1C7 /* MDFWebPageSetting.m */,
 				0005FA551DE5A9EB006EF1C7 /* DemoViewController.h */,
 				0005FA561DE5A9EB006EF1C7 /* DemoViewController.m */,
 				0005FA3B1DE5A656006EF1C7 /* Main.storyboard */,
@@ -112,8 +114,6 @@
 				0005FA4B1DE5A693006EF1C7 /* MDFWebViewController.m */,
 				0005FA751DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.h */,
 				0005FA761DE8231C006EF1C7 /* MDFScriptMessageHandlerManager.m */,
-				0005FA4D1DE5A6BC006EF1C7 /* MDFWebPageSetting.h */,
-				0005FA4E1DE5A6BC006EF1C7 /* MDFWebPageSetting.m */,
 			);
 			path = MDFWebViewController;
 			sourceTree = "<group>";
