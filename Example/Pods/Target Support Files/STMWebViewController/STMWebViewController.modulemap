@@ -1,0 +1,6 @@
+framework module STMWebViewController {
+  umbrella header "STMWebViewController-umbrella.h"
+
+  export *
+  module * { export * }
+}

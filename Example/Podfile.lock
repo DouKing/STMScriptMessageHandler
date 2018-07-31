@@ -1,0 +1,16 @@
+PODS:
+  - STMWebViewController (0.1.0)
+
+DEPENDENCIES:
+  - STMWebViewController (from `../`)
+
+EXTERNAL SOURCES:
+  STMWebViewController:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  STMWebViewController: 65421938377ac233afe70ab5baf6265175ff338a
+
+PODFILE CHECKSUM: c40289d60425558fa700605cad38a6d12a500d58
+
+COCOAPODS: 1.5.3

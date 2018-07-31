@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'STMWebViewController_Example' do
+  pod 'STMWebViewController', :path => '../'
+
+  target 'STMWebViewController_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
