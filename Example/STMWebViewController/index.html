@@ -21,7 +21,9 @@
             setText("viewDidLayoutSubviews");
         }
         function setRightButtons() {
-            Bridge.page.setButtons([{"title":'按钮0'}, {"title":'按钮1'}, "(function(index){alert('点击了'+index);})"]);
+            AppBridge.Page.callMethod('setButtons', [{"title":'按钮0'}, {"title":'按钮1'}], function(index){
+                                        alert('点击了'+index);
+                                      });
         }
         function setText(content) {
             document.getElementById("returnValue").innerHTML = content;

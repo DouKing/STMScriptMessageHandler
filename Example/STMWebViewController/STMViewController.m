@@ -14,23 +14,11 @@ static NSInteger const kLeftBarItemBaseTag  = 1001;
 
 @property (nonatomic, strong) NSString *rightButton_callback;
 @property (nonatomic, strong) NSString *leftButton_callback;
+@property (nullable, nonatomic, copy) STMResponseCallback responseCallback;
 
 @end
 
 @implementation STMViewController
-
-- (void)awakeFromNib {
-    [super awakeFromNib];
-    NSString *jScript = @";var App = window.webkit.messageHandlers;\
-    var Bridge = {}; \
-    var page = {};\
-    Bridge.page = page;\
-    page.setButtons = function(buttons){\
-    App.Page.postMessage(buttons);\
-    };";
-    WKUserScript *userScript = [[WKUserScript alloc] initWithSource:jScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-    [self.webView.configuration.userContentController addUserScript:userScript];
-}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -53,25 +41,16 @@ static NSInteger const kLeftBarItemBaseTag  = 1001;
 }
 
 - (void)_handleRightBarButtonItemAction:(UIBarButtonItem *)sender {
-    NSString *action = [NSString stringWithFormat:@"%@('%ld');",
-                        self.rightButton_callback, sender.tag - kRightBarItemBaseTag];
-    [self.webView evaluateJavaScript:action completionHandler:nil];
+    self.responseCallback(@(sender.tag - kRightBarItemBaseTag));
 }
 
 - (void)_handleLeftBarButtonItemAction:(UIBarButtonItem *)sender {
-    NSString *action = [NSString stringWithFormat:@"; var js_left_callback = %@; js_left_callback('%ld');",
-                        self.leftButton_callback, sender.tag - kRightBarItemBaseTag];
-    [self.webView evaluateJavaScript:action completionHandler:nil];
+    self.responseCallback(@(sender.tag - kLeftBarItemBaseTag));
 }
 
 - (void)_setupNavigationBarButtonItems:(NSArray<NSDictionary *> *)items onRight:(BOOL)flag {
     NSMutableArray<UIBarButtonItem *> *temp = [NSMutableArray arrayWithCapacity:items.count];
     [items enumerateObjectsUsingBlock:^(NSDictionary * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        if (idx == items.count - 1 && [obj isKindOfClass:[NSString class]]) {
-            if (flag) { self.rightButton_callback = (NSString *)obj; }
-            else { self.leftButton_callback = (NSString *)obj; }
-            return;
-        }
         NSString *text = obj[@"title"];
         UIBarButtonItem *barButtonItem = nil;
         SEL barButtonItemAction = flag ? @selector(_handleRightBarButtonItemAction:) : @selector(_handleLeftBarButtonItemAction:);
@@ -94,12 +73,16 @@ static NSInteger const kLeftBarItemBaseTag  = 1001;
 
 @implementation STMPageSetting
 
-- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
-    NSString *name = message.name;
-    if ([name isEqualToString:self.handlerName]) {
-        NSArray<NSDictionary *> *btns = message.body;
-        [(STMViewController *)self.webViewController _setupRightBarButtonItems:btns];
+- (instancetype)initWithWebViewController:(STMWebViewController *)webViewController {
+    self = [super initWithWebViewController:webViewController];
+    if (self) {
+        [self registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
+            STMViewController *vc = (STMViewController *)self.webViewController;
+            [vc _setupRightBarButtonItems:data];
+            vc.responseCallback = responseCallback;
+        }];
     }
+    return self;
 }
 
 - (NSString *)handlerName {

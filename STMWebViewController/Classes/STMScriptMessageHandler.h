@@ -9,18 +9,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@protocol STMScriptMessageHandlerProtocol <WKScriptMessageHandler>
+typedef void (^STMResponseCallback)(id responseData);
+typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallback);
 
-- (NSString *)handlerName;
-
-@end
-
-@interface STMScriptMessageHandler : NSObject
+@interface STMScriptMessageHandler : NSObject<WKScriptMessageHandler>
 
 @property (nullable, nonatomic, weak, readonly) STMWebViewController *webViewController;
-@property (nullable, nonatomic, weak, readonly) id<STMScriptMessageHandlerProtocol> child;
+@property (nullable, nonatomic, copy, readonly) NSString *handlerName;
 
 - (instancetype)initWithWebViewController:(STMWebViewController *)webViewController;
+- (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler;
 
 @end
 

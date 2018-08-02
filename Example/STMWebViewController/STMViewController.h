@@ -13,7 +13,7 @@
 
 @end
 
-@interface STMPageSetting : STMScriptMessageHandler<STMScriptMessageHandlerProtocol>
+@interface STMPageSetting : STMScriptMessageHandler
 
 @end
 

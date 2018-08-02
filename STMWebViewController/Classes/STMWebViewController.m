@@ -93,13 +93,13 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
 
 - (void)_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
     WKUserContentController *userContentController = self.webView.configuration.userContentController;
-    [userContentController removeScriptMessageHandlerForName:messageHandler.child.handlerName];
-    [userContentController addScriptMessageHandler:messageHandler.child name:messageHandler.child.handlerName];
+    [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
+    [userContentController addScriptMessageHandler:messageHandler name:messageHandler.handlerName];
 }
 
 - (void)_removeScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
     WKUserContentController *userContentController = self.webView.configuration.userContentController;
-    [userContentController removeScriptMessageHandlerForName:messageHandler.child.handlerName];
+    [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
 }
 
 - (void)_addObserver {
