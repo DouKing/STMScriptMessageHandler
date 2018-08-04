@@ -7,15 +7,17 @@
 //
 
 #import "STMViewController.h"
+#import "STMPageSetting.h"
+
 static NSInteger const kRightBarItemBaseTag = 3001;
-static NSInteger const kLeftBarItemBaseTag  = 1001;
 
 @interface STMViewController ()
-
-@property (nonatomic, strong) NSString *rightButton_callback;
-@property (nonatomic, strong) NSString *leftButton_callback;
 @property (nullable, nonatomic, copy) STMResponseCallback responseCallback;
+@property (nullable, nonatomic, strong) STMPageSetting *page;
+@end
 
+@interface STMViewController (Demo)
+- (void)setupRightBarButtonItems:(NSArray<NSDictionary *> *)items callback:(STMResponseCallback)responseCallback;
 @end
 
 @implementation STMViewController
@@ -24,74 +26,52 @@ static NSInteger const kLeftBarItemBaseTag  = 1001;
     [super viewDidLoad];
     NSString *path = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
     [self.webView loadHTMLString:[NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil] baseURL:nil];
+
+    UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+    btn.frame = CGRectMake(0, self.view.frame.size.height - 50, 100, 50);
+    [btn setTitle:@"Call js method" forState:UIControlStateNormal];
+    [btn addTarget:self action:@selector(onClick) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:btn];
+    btn.center = CGPointMake(self.view.center.x, btn.center.y);
 }
 
-- (NSArray<Class> *)scriptMessageHandlerClass {
-    return @[STMPageSetting.class];
+- (void)prepareScriptMessageHandler {
+    STMPageSetting *pageSetting = [[STMPageSetting alloc] initWithWebViewController:self];
+    [pageSetting registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
+        [self setupRightBarButtonItems:data callback:responseCallback];
+    }];
+    self.page = pageSetting;
+    [self registerScriptMessageHandler:pageSetting];
 }
 
-#pragma mark -
-
-- (void)_setupRightBarButtonItems:(NSArray<NSDictionary *> *)items {
-    [self _setupNavigationBarButtonItems:items onRight:YES];
+- (void)onClick {
+    [self.page callMethod:@"showAlert" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
+        NSLog(@"receive js response: %@", responseData);
+    }];
 }
 
-- (void)_setupLeftBarButtonItems:(NSArray<NSDictionary *> *)items {
-    [self _setupNavigationBarButtonItems:items onRight:NO];
+@end
+
+@implementation STMViewController (Demo)
+
+- (void)setupRightBarButtonItems:(NSArray<NSDictionary *> *)items callback:(STMResponseCallback)responseCallback {
+    self.responseCallback = responseCallback;
+    [self _setupNavigationBarButtonItems:items];
 }
 
 - (void)_handleRightBarButtonItemAction:(UIBarButtonItem *)sender {
     self.responseCallback(@(sender.tag - kRightBarItemBaseTag));
 }
 
-- (void)_handleLeftBarButtonItemAction:(UIBarButtonItem *)sender {
-    self.responseCallback(@(sender.tag - kLeftBarItemBaseTag));
-}
-
-- (void)_setupNavigationBarButtonItems:(NSArray<NSDictionary *> *)items onRight:(BOOL)flag {
+- (void)_setupNavigationBarButtonItems:(NSArray<NSDictionary *> *)items {
     NSMutableArray<UIBarButtonItem *> *temp = [NSMutableArray arrayWithCapacity:items.count];
     [items enumerateObjectsUsingBlock:^(NSDictionary * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         NSString *text = obj[@"title"];
-        UIBarButtonItem *barButtonItem = nil;
-        SEL barButtonItemAction = flag ? @selector(_handleRightBarButtonItemAction:) : @selector(_handleLeftBarButtonItemAction:);
-        barButtonItem = [[UIBarButtonItem alloc] initWithTitle:text style:UIBarButtonItemStylePlain target:self action:barButtonItemAction];
-        if (flag) {
-            barButtonItem.tag = kRightBarItemBaseTag + idx;
-        } else {
-            barButtonItem.tag = kLeftBarItemBaseTag + idx;
-        }
+        UIBarButtonItem *barButtonItem = [[UIBarButtonItem alloc] initWithTitle:text style:UIBarButtonItemStylePlain target:self action:@selector(_handleRightBarButtonItemAction:)];
+        barButtonItem.tag = kRightBarItemBaseTag + idx;
         [temp addObject:barButtonItem];
     }];
-    if (flag) {
-        self.navigationItem.rightBarButtonItems = [NSArray arrayWithArray:temp];
-    } else {
-        self.navigationItem.leftBarButtonItems = [NSArray arrayWithArray:temp];
-    }
-}
-
-@end
-
-@implementation STMPageSetting
-
-- (instancetype)initWithWebViewController:(STMWebViewController *)webViewController {
-    self = [super initWithWebViewController:webViewController];
-    if (self) {
-        [self registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
-            STMViewController *vc = (STMViewController *)self.webViewController;
-            [vc _setupRightBarButtonItems:data];
-            vc.responseCallback = responseCallback;
-        }];
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [self callMethod:@"showAlert" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
-                NSLog(@"alert receive js response: %@", responseData);
-            }];
-        });
-    }
-    return self;
-}
-
-- (NSString *)handlerName {
-    return @"Page";
+    self.navigationItem.rightBarButtonItems = [NSArray arrayWithArray:temp];
 }
 
 @end

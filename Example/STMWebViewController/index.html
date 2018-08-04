@@ -8,25 +8,29 @@
         button { margin:0 3px 10px; font-size:12px; }
         .logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
     </style><script language="javascript">
-        function setRightButtons() {
-            AppBridge.Page.callMethod('setButtons', [{"title":'按钮0'}, {"title":'按钮1'}], function(index){
-                                        alert('点击了'+index);
-                                      });
+        document.body.appendChild(document.createElement('br'));
+        var uniqueId = 1;
+        function log(message, data) {
+            var log = document.getElementById('log')
+            var el = document.createElement('div')
+            el.className = 'logLine'
+            el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data)
+            if (log.children.length) { log.insertBefore(el, log.children[0]) }
+            else { log.appendChild(el) }
         }
-        function setText(content) {
-            document.getElementById("returnValue").innerHTML = content;
+        function setRightButtons() {
+            log('JS calling native method "setButtons"');
+            AppBridge.Page.callMethod('setButtons', [{"title":'按钮0'}, {"title":'按钮1'}], function(index){
+                                      log('JS receive response', index);
+                                      });
         }
 
         registerMethod('showAlert', function(data, callback){
-                       var message = JSON.parse(data);
-                       alert(data);
+                       alert('data');
                        callback(data);
                    });
     </script>
 </head><body>
-    <h1>这是按钮调用</h1>
-    <input type="button" value="点我试试" onclick="setRightButtons()" />
-    <h1>这是回调结果展示区</h1>
-    <p id="returnValue">这是一个段落</p>
-    </textarea>
+    <input type="button" value="设置右上角按钮" onclick="setRightButtons()" />
+    <div id='log'></div>
 </body></html>

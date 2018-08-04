@@ -7,13 +7,7 @@
 //
 
 #import "../../STMWebViewController/Classes/STMWebViewController.h"
-#import "../../STMWebViewController/Classes/STMScriptMessageHandler.h"
 
 @interface STMViewController : STMWebViewController
-
-@end
-
-@interface STMPageSetting : STMScriptMessageHandler
-
 @end
 

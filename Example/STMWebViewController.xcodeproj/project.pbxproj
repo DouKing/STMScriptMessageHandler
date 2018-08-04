@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		005A0A3D2115BADF0045A8C1 /* STMPageSetting.m in Sources */ = {isa = PBXBuildFile; fileRef = 005A0A3C2115BADF0045A8C1 /* STMPageSetting.m */; };
 		005DAB8B21103095004431EF /* STMViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 005DAB8A21103095004431EF /* STMViewController.m */; };
 		005DAB8D21103200004431EF /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 005DAB8C21103200004431EF /* index.html */; };
 		2544AE43148C2778D3C2B1C3 /* Pods_STMWebViewController_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C007C479FAA238BD16460D89 /* Pods_STMWebViewController_Example.framework */; };
@@ -38,6 +39,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		005A0A3B2115BADF0045A8C1 /* STMPageSetting.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = STMPageSetting.h; sourceTree = "<group>"; };
+		005A0A3C2115BADF0045A8C1 /* STMPageSetting.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = STMPageSetting.m; sourceTree = "<group>"; };
 		005DAB8921103095004431EF /* STMViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = STMViewController.h; sourceTree = "<group>"; };
 		005DAB8A21103095004431EF /* STMViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = STMViewController.m; sourceTree = "<group>"; };
 		005DAB8C21103200004431EF /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
@@ -139,6 +142,8 @@
 				873B8AEA1B1F5CCA007FD442 /* Main.storyboard */,
 				005DAB8921103095004431EF /* STMViewController.h */,
 				005DAB8A21103095004431EF /* STMViewController.m */,
+				005A0A3B2115BADF0045A8C1 /* STMPageSetting.h */,
+				005A0A3C2115BADF0045A8C1 /* STMPageSetting.m */,
 				005DAB8C21103200004431EF /* index.html */,
 				71719F9D1E33DC2100824A3D /* LaunchScreen.storyboard */,
 				6003F5A8195388D20070C39A /* Images.xcassets */,
@@ -364,6 +369,7 @@
 			files = (
 				6003F59E195388D20070C39A /* STMAppDelegate.m in Sources */,
 				005DAB8B21103095004431EF /* STMViewController.m in Sources */,
+				005A0A3D2115BADF0045A8C1 /* STMPageSetting.m in Sources */,
 				6003F59A195388D20070C39A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -54,29 +54,18 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
                                          CGRectGetWidth(self.navigationController.navigationBar.frame), 2);
 }
 
-- (void)registerScriptMessageHandlerClass:(Class)scriptMessageHandlerCls {
-    if (!scriptMessageHandlerCls) { return; }
-    STMScriptMessageHandler *msgHandler = [scriptMessageHandlerCls alloc];
-    if (![msgHandler isKindOfClass:[STMScriptMessageHandler class]]) {
-        @throw @"The registered class must be a child of `STMScriptMessageHandler`";
-        return;
-    }
-    msgHandler = [msgHandler initWithWebViewController:self];
+- (void)registerScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler {
+    NSAssert([msgHandler isKindOfClass:STMScriptMessageHandler.class], @"");
     [self _addScriptMessageHandler:msgHandler];
     [self.messageHandlers addObject:msgHandler];
 }
 
-- (NSArray<Class> *)scriptMessageHandlerClass {
-    return nil;
-}
+- (void)prepareScriptMessageHandler {}
 
 #pragma mark - Private Methods
+
 - (void)_initial {
-    __weak typeof(self) __weak_self__ = self;
-    [self.scriptMessageHandlerClass enumerateObjectsUsingBlock:^(Class  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        __strong typeof(__weak_self__) self = __weak_self__;
-        [self registerScriptMessageHandlerClass:obj];
-    }];
+    [self prepareScriptMessageHandler];
     [self _addObserver];
 }
 
@@ -188,6 +177,10 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     if (!_messageHandlers) {
         _messageHandlers = [NSMutableArray array];
     }
+    return _messageHandlers;
+}
+
+- (NSArray<STMScriptMessageHandler *> *)registeredMessageHandlers {
     return _messageHandlers;
 }
 
