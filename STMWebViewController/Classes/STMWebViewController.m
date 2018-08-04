@@ -47,19 +47,8 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     [self.view addSubview:self.progressView];
 }
 
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    [self.webView evaluateJavaScript:@"viewDidAppear()" completionHandler:nil];
-}
-
-- (void)viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-    [self.webView evaluateJavaScript:@"viewWillDisappear()" completionHandler:nil];
-}
-
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    [self.webView evaluateJavaScript:@"viewDidLayoutSubviews()" completionHandler:nil];
     self.webView.frame = self.view.bounds;
     self.progressView.frame = CGRectMake(0, CGRectGetMaxY(self.navigationController.navigationBar.frame),
                                          CGRectGetWidth(self.navigationController.navigationBar.frame), 2);

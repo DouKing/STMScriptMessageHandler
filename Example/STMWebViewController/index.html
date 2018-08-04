@@ -8,18 +8,6 @@
         button { margin:0 3px 10px; font-size:12px; }
         .logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
     </style><script language="javascript">
-        function viewWillAppear() {
-            setText("viewWillAppear");
-        }
-        function viewDidAppear() {
-            setText("viewDidAppear");
-        }
-        function viewWillDisAppear() {
-            setText("viewWillDisAppear");
-        }
-        function viewDidLayoutSubviews() {
-            setText("viewDidLayoutSubviews");
-        }
         function setRightButtons() {
             AppBridge.Page.callMethod('setButtons', [{"title":'按钮0'}, {"title":'按钮1'}], function(index){
                                         alert('点击了'+index);
@@ -28,6 +16,12 @@
         function setText(content) {
             document.getElementById("returnValue").innerHTML = content;
         }
+
+        registerMethod('showAlert', function(data, callback){
+                       var message = JSON.parse(data);
+                       alert(data);
+                       callback(data);
+                   });
     </script>
 </head><body>
     <h1>这是按钮调用</h1>

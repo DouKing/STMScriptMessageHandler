@@ -81,6 +81,11 @@ static NSInteger const kLeftBarItemBaseTag  = 1001;
             [vc _setupRightBarButtonItems:data];
             vc.responseCallback = responseCallback;
         }];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self callMethod:@"showAlert" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
+                NSLog(@"alert receive js response: %@", responseData);
+            }];
+        });
     }
     return self;
 }
