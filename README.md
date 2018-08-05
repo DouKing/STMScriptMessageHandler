@@ -5,10 +5,6 @@
 [![License](https://img.shields.io/cocoapods/l/STMWebViewController.svg?style=flat)](https://cocoapods.org/pods/STMWebViewController)
 [![Platform](https://img.shields.io/cocoapods/p/STMWebViewController.svg?style=flat)](https://cocoapods.org/pods/STMWebViewController)
 
-## Example
-
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
-
 ## Requirements
 
 iOS 8.0+

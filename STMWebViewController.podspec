@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'STMWebViewController'
-  s.version          = '0.1.0'
+  s.version          = '0.2.0'
   s.summary          = 'A web view controller that can communicate with js.'
 
 # This description is used to generate tags and improve search results.
@@ -28,7 +28,7 @@ Pod::Spec.new do |s|
 
   s.ios.deployment_target = '8.0'
 
-  s.source_files = 'STMWebViewController/Classes/**/*'
+  s.source_files = 'STMWebViewController/Source/**/*'
   
   # s.resource_bundles = {
   #   'STMWebViewController' => ['STMWebViewController/Assets/*.png']
