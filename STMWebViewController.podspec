@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'STMWebViewController'
-  s.version          = '0.2.0'
+  s.version          = '1.0.0'
   s.summary          = 'A web view controller that can communicate with js.'
 
 # This description is used to generate tags and improve search results.
