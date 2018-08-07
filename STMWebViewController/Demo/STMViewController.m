@@ -7,13 +7,11 @@
 //
 
 #import "STMViewController.h"
-#import "STMPageSetting.h"
 
 static NSInteger const kRightBarItemBaseTag = 3001;
 
 @interface STMViewController ()
 @property (nullable, nonatomic, copy) STMResponseCallback responseCallback;
-@property (nullable, nonatomic, strong) STMPageSetting *page;
 @end
 
 @interface STMViewController (Demo)
@@ -36,16 +34,14 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 }
 
 - (void)prepareScriptMessageHandler {
-    STMPageSetting *pageSetting = [[STMPageSetting alloc] initWithWebViewController:self];
-    [pageSetting registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
+    [super prepareScriptMessageHandler];
+    [self.messageHandler registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
         [self setupRightBarButtonItems:data callback:responseCallback];
     }];
-    self.page = pageSetting;
-    [self registerScriptMessageHandler:pageSetting];
 }
 
 - (void)onClick {
-    [self.page callMethod:@"showAlert" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
+    [self.messageHandler callMethod:@"showAlert" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
         NSLog(@"native receive js response: %@", responseData);
     }];
 }

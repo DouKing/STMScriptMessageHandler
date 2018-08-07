@@ -10,10 +10,12 @@
 #define STM_JS_FUNC(x, ...) [NSString stringWithFormat:@#x ,##__VA_ARGS__]
 
 static NSString * const kSTMApp = @"App";
-static NSString * const kSTMAppBridge = @"AppBridge";
 static NSString * const kSTMNativeCallback = @"nativeCallback";
 
 @interface STMScriptMessageHandler ()
+
+@property (nonatomic, copy) NSString *handlerName;
+@property (nullable, nonatomic, weak) WKWebView *webView;
 
 @property (nullable, nonatomic, strong) NSMutableDictionary *methodHandlers;
 @property (nullable, nonatomic, strong) NSMutableDictionary *jsResponseHandlers;
@@ -22,10 +24,11 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
 
 @implementation STMScriptMessageHandler
 
-- (instancetype)initWithWebViewController:(STMWebViewController *)webViewController {
+- (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(WKWebView * _Nonnull __weak)webView {
     self = [super init];
     if (self) {
-        _webViewController = webViewController;
+        _handlerName = [handlerName copy];
+        _webView = webView;
         [self prepareJsScript];
     }
     return self;
@@ -41,10 +44,10 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
             %@.%@.%@.callback = callback;
             %@.%@.postMessage({name:name, info:info});
         };
-        , kSTMAppBridge, self.handlerName, methodName,
-        kSTMAppBridge, self.handlerName, methodName,
-        kSTMAppBridge, self.handlerName,
-        kSTMAppBridge, self.handlerName, methodName,
+        , kSTMApp, self.handlerName, methodName,
+        kSTMApp, self.handlerName, methodName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName, methodName,
         kSTMApp, self.handlerName
     );
     [self _addJSScript:js forMainFrameOnly:YES];
@@ -60,7 +63,7 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     }
     NSString *formatParameter = [self _formatParameters:parameters];
     NSString *js = [NSString stringWithFormat:@"nativeCallback('%@', '%@')", methodName, formatParameter];
-    [self.webViewController.webView evaluateJavaScript:js completionHandler:nil];
+    [self.webView evaluateJavaScript:js completionHandler:nil];
 }
 
 #pragma mark - Private
@@ -69,9 +72,9 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     NSString *js = STM_JS_FUNC(
         var callback = %@.%@.%@.callback;
         if (callback) { callback(%@); }
-        , kSTMAppBridge, self.handlerName, methodName, parameter
+        , kSTMApp, self.handlerName, methodName, parameter
     );
-    [self.webViewController.webView evaluateJavaScript:js completionHandler:nil];
+    [self.webView evaluateJavaScript:js completionHandler:nil];
 }
 
 - (void)prepareJsScript {
@@ -86,13 +89,52 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     }];
 }
 
+- (void)_addJS1 {
+    NSString *jsScript = STM_JS_FUNC(
+                                     var %@ = window.webkit.messageHandlers;
+                                     , kSTMApp
+                                     );
+    [self _addJSScript:jsScript forMainFrameOnly:YES];
+}
+
+- (void)_addJS2 {
+    NSString *jsScript = STM_JS_FUNC(
+                                     function registerMethod(methodName, methodHandler) {
+                                         if (!%@.%@.methods) {
+                                             %@.%@.methods = {};
+                                         }
+                                         %@.%@.methods.methodName = methodHandler;
+                                     }
+                                     , kSTMApp, self.handlerName,
+                                     kSTMApp, self.handlerName,
+                                     kSTMApp, self.handlerName
+                                     );
+    [self _addJSScript:jsScript forMainFrameOnly:YES];
+}
+
+- (void)_addJS3 {
+    NSString *jsScript = STM_JS_FUNC(
+                                     function nativeCallback(methodName, info) {
+                                         var handler = %@.%@.methods.methodName;
+                                         handler(info, function(data){
+                                             %@.%@.postMessage({name:'%@', info:{name: methodName, info: data}});
+                                         });
+                                     }
+                                     , kSTMApp, self.handlerName,
+                                     kSTMApp, self.handlerName, kSTMNativeCallback
+                                     );
+    [self _addJSScript:jsScript forMainFrameOnly:YES];
+}
+
+#pragma mark -
+
 - (void)_addJSScript:(NSString *)jsScript forMainFrameOnly:(BOOL)flag {
     if (!jsScript) { return; }
     jsScript = [NSString stringWithFormat:@";%@;", jsScript];
     WKUserScript *userScript = [[WKUserScript alloc] initWithSource:jsScript
                                                       injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                                                    forMainFrameOnly:flag];
-    [_webViewController.webView.configuration.userContentController addUserScript:userScript];
+    [self.webView.configuration.userContentController addUserScript:userScript];
 }
 
 - (NSString *)_formatParameters:(NSDictionary *)parameters {
@@ -113,52 +155,6 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     formatParameter = [formatParameter stringByReplacingOccurrencesOfString:@"\u2029" withString:@"\\u2029"];
     NSLog(@"%@", formatParameter);
     return formatParameter;
-}
-
-#pragma mark -
-
-- (void)_addJS1 {
-    NSString *jsScript = STM_JS_FUNC(
-        var %@ = window.webkit.messageHandlers;
-        var %@ = {};
-        if (!%@.%@) {
-            %@.%@ = {};
-        }
-        , kSTMApp,
-        kSTMAppBridge,
-        kSTMAppBridge, self.handlerName,
-        kSTMAppBridge, self.handlerName
-    );
-    [self _addJSScript:jsScript forMainFrameOnly:YES];
-}
-
-- (void)_addJS2 {
-    NSString *jsScript = STM_JS_FUNC(
-        function registerMethod(methodName, methodHandler) {
-            if (!%@.%@.methods) {
-                %@.%@.methods = {};
-            }
-            %@.%@.methods.methodName = methodHandler;
-        }
-        , kSTMAppBridge, self.handlerName,
-        kSTMAppBridge, self.handlerName,
-        kSTMAppBridge, self.handlerName
-    );
-    [self _addJSScript:jsScript forMainFrameOnly:YES];
-}
-
-- (void)_addJS3 {
-    NSString *jsScript = STM_JS_FUNC(
-        function nativeCallback(methodName, info) {
-            var handler = %@.%@.methods.methodName;
-            handler(info, function(data){
-                %@.%@.postMessage({name:'%@', info:{name: methodName, info: data}});
-            });
-        }
-        , kSTMAppBridge, self.handlerName,
-        kSTMApp, self.handlerName, kSTMNativeCallback
-    );
-    [self _addJSScript:jsScript forMainFrameOnly:YES];
 }
 
 #pragma mark - WKScriptMessageHandler
@@ -191,10 +187,6 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
         _jsResponseHandlers = [NSMutableDictionary dictionary];
     }
     return _jsResponseHandlers;
-}
-
-- (NSString *)handlerName {
-    return NSStringFromClass(self.class);
 }
 
 @end

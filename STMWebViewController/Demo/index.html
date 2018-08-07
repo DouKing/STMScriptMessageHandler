@@ -20,7 +20,7 @@
         function setRightButtons() {
             var buttons = [{"title":'按钮0'}, {"title":'按钮1'}];
             log('JS calling native method "setButtons"', buttons);
-            AppBridge.Page.callMethod('setButtons', buttons, function(index){
+            App.Bridge.callMethod('setButtons', buttons, function(index){
                                       var response = '点击了按钮' + index;
                                       log('JS receive native response', response);
                                       });

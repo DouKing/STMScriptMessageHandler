@@ -7,18 +7,20 @@
 
 @import UIKit;
 @import WebKit;
+#import "STMScriptMessageHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
-@class STMScriptMessageHandler;
 
 @interface STMWebViewController : UIViewController
 
 @property (nonatomic, strong, readonly) WKWebView *webView;
 @property (nonatomic, strong) UIProgressView *progressView;
-- (NSArray<__kindof STMScriptMessageHandler *> *)registeredMessageHandlers;
+@property (nullable, nonatomic, strong, readonly) STMScriptMessageHandler *messageHandler;
 
 /// register your message handler in this method
-- (void)prepareScriptMessageHandler;
+- (void)prepareScriptMessageHandler NS_REQUIRES_SUPER;
+
+- (NSArray<__kindof STMScriptMessageHandler *> *)registeredMessageHandlers;
 - (void)registerScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler;
 
 @end

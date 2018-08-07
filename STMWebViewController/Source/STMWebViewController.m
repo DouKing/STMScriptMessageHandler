@@ -6,7 +6,6 @@
 //
 
 #import "STMWebViewController.h"
-#import "STMScriptMessageHandler.h"
 
 static NSString * const kMDFWebViewObserverKeyPathTitle = @"title";
 static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimatedProgress";
@@ -60,7 +59,11 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     [self.messageHandlers addObject:msgHandler];
 }
 
-- (void)prepareScriptMessageHandler {}
+- (void)prepareScriptMessageHandler {
+    STMScriptMessageHandler *messageHandler = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Bridge" forWebView:self.webView];
+    _messageHandler = messageHandler;
+    [self registerScriptMessageHandler:messageHandler];
+}
 
 #pragma mark - Private Methods
 
