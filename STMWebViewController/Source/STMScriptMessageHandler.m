@@ -34,49 +34,6 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     return self;
 }
 
-- (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler {
-    if (!methodName) { return; }
-    NSString *js = STM_JS_FUNC(
-        if (!%@.%@.%@) {
-            %@.%@.%@ = {};
-        };
-        %@.%@.callMethod = function(name, info, callback) {
-            %@.%@.%@.callback = callback;
-            %@.%@.postMessage({name:name, info:info});
-        };
-        , kSTMApp, self.handlerName, methodName,
-        kSTMApp, self.handlerName, methodName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName, methodName,
-        kSTMApp, self.handlerName
-    );
-    [self _addJSScript:js forMainFrameOnly:YES];
-    if (handler) {
-        self.methodHandlers[methodName] = handler;
-    }
-}
-
-- (void)callMethod:(NSString *)methodName parameters:(NSDictionary *)parameters responseHandler:(STMResponseCallback)handler {
-    if (!methodName) { return; }
-    if (handler) {
-        self.jsResponseHandlers[methodName] = handler;
-    }
-    NSString *formatParameter = [self _formatParameters:parameters];
-    NSString *js = [NSString stringWithFormat:@"nativeCallback('%@', '%@')", methodName, formatParameter];
-    [self.webView evaluateJavaScript:js completionHandler:nil];
-}
-
-#pragma mark - Private
-
-- (void)_response:(NSString *)methodName parameter:(nullable id)parameter {
-    NSString *js = STM_JS_FUNC(
-        var callback = %@.%@.%@.callback;
-        if (callback) { callback(%@); }
-        , kSTMApp, self.handlerName, methodName, parameter
-    );
-    [self.webView evaluateJavaScript:js completionHandler:nil];
-}
-
 - (void)prepareJsScript {
     [self _addJS1];
     [self _addJS2];
@@ -89,40 +46,84 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     }];
 }
 
+- (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler {
+    if (!methodName) { return; }
+    if (handler) {
+        self.methodHandlers[methodName] = handler;
+    }
+}
+
+- (void)callMethod:(NSString *)methodName parameters:(NSDictionary *)parameters responseHandler:(STMResponseCallback)handler {
+    if (!methodName) { return; }
+    if (handler) {
+        self.jsResponseHandlers[methodName] = handler;
+    }
+    NSString *formatParameter = [self _formatParameters:parameters];
+    NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@', '%@'), kSTMApp, self.handlerName, methodName, formatParameter);
+    [self.webView evaluateJavaScript:js completionHandler:nil];
+}
+
+#pragma mark - Private
+
+- (void)_response:(NSString *)methodName parameter:(nullable id)parameter {
+    NSString *formatParameter = [self _formatParameters:parameter];
+    NSString *js = STM_JS_FUNC(
+        var callback = %@.%@.callback['%@'];
+        if (callback) { callback('%@'); }
+        , kSTMApp, self.handlerName, methodName, formatParameter
+    );
+    [self.webView evaluateJavaScript:js completionHandler:nil];
+}
+
 - (void)_addJS1 {
-    NSString *jsScript = STM_JS_FUNC(
-                                     var %@ = window.webkit.messageHandlers;
-                                     , kSTMApp
-                                     );
+    NSString *jsScript = STM_JS_FUNC(var %@ = window.webkit.messageHandlers;, kSTMApp);
     [self _addJSScript:jsScript forMainFrameOnly:YES];
 }
 
 - (void)_addJS2 {
     NSString *jsScript = STM_JS_FUNC(
-                                     function registerMethod(methodName, methodHandler) {
-                                         if (!%@.%@.methods) {
-                                             %@.%@.methods = {};
-                                         }
-                                         %@.%@.methods.methodName = methodHandler;
-                                     }
-                                     , kSTMApp, self.handlerName,
-                                     kSTMApp, self.handlerName,
-                                     kSTMApp, self.handlerName
-                                     );
+        %@.%@.registerMethod = function(methodName, methodHandler) {
+         if (!%@.%@.methods) {
+             %@.%@.methods = {};
+         }
+         %@.%@.methods.methodName = methodHandler;
+        }
+        , kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName
+    );
     [self _addJSScript:jsScript forMainFrameOnly:YES];
+
+    NSString *js = STM_JS_FUNC(
+        if (!%@.%@.callback) {
+           %@.%@.callback = {};
+        };
+        %@.%@.callMethod = function(name, info, callback) {
+           %@.%@.callback[name] = callback;
+           %@.%@.postMessage({name:name, info:info});
+        };
+        , kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName
+    );
+    [self _addJSScript:js forMainFrameOnly:YES];
 }
 
 - (void)_addJS3 {
     NSString *jsScript = STM_JS_FUNC(
-                                     function nativeCallback(methodName, info) {
-                                         var handler = %@.%@.methods.methodName;
-                                         handler(info, function(data){
-                                             %@.%@.postMessage({name:'%@', info:{name: methodName, info: data}});
-                                         });
-                                     }
-                                     , kSTMApp, self.handlerName,
-                                     kSTMApp, self.handlerName, kSTMNativeCallback
-                                     );
+        %@.%@.nativeCall = function(methodName, info) {
+         var handler = %@.%@.methods.methodName;
+         handler(info, function(data){
+             %@.%@.postMessage({name:'%@', info:{name: methodName, info: data}});
+         });
+        }
+        , kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName,
+        kSTMApp, self.handlerName, kSTMNativeCallback
+    );
     [self _addJSScript:jsScript forMainFrameOnly:YES];
 }
 
@@ -153,7 +154,6 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     formatParameter = [formatParameter stringByReplacingOccurrencesOfString:@"\f" withString:@"\\f"];
     formatParameter = [formatParameter stringByReplacingOccurrencesOfString:@"\u2028" withString:@"\\u2028"];
     formatParameter = [formatParameter stringByReplacingOccurrencesOfString:@"\u2029" withString:@"\\u2029"];
-    NSLog(@"%@", formatParameter);
     return formatParameter;
 }
 

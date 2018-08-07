@@ -20,16 +20,22 @@
         function setRightButtons() {
             var buttons = [{"title":'按钮0'}, {"title":'按钮1'}];
             log('JS calling native method "setButtons"', buttons);
-            App.Bridge.callMethod('setButtons', buttons, function(index){
+            App.Page.callMethod('setButtons', buttons, function(index){
                                       var response = '点击了按钮' + index;
-                                      log('JS receive native response', response);
+                                      log('JS got native `setButtons` response', response);
                                       });
         }
+        
+        App.Bridge.callMethod('nslog', {foo: 'foo', bar: 'bar'}, function(data) {
+                                log('JS got native `nslog` response', data);
+                              });
 
-        registerMethod('showAlert', function(data, callback){
+        App.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(data){
+                                log('JS got native `testNativeMethod` response', data);
+                             });
+        App.Bridge.registerMethod('log', function(data, callback){
                        var message = JSON.parse(data);
-                       log('Native calling js method "showAlert"', message);
-                       alert(message.title);
+                       log('Native calling js method `log`', message);
                        callback({key: 'from js', value: 'something'});
                    });
     </script>

@@ -21,6 +21,7 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 - (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(__weak WKWebView *)webView;
 
 - (void)prepareJsScript NS_REQUIRES_SUPER;
+
 - (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler;
 - (void)callMethod:(NSString *)methodName parameters:(NSDictionary *)parameters responseHandler:(STMResponseCallback)handler;
 

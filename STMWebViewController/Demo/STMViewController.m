@@ -12,6 +12,8 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 
 @interface STMViewController ()
 @property (nullable, nonatomic, copy) STMResponseCallback responseCallback;
+@property (nullable, nonatomic, strong) STMScriptMessageHandler *page;
+
 @end
 
 @interface STMViewController (Demo)
@@ -35,14 +37,31 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 
 - (void)prepareScriptMessageHandler {
     [super prepareScriptMessageHandler];
-    [self.messageHandler registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
+
+    // Use `self.messageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
+    [self.messageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
+        NSLog(@"native receive js calling `nslog`: %@", data);
+        responseCallback(@"native `nslog` done!");
+    }];
+
+    [self.messageHandler registerMethod:@"testNativeMethod" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
+        NSLog(@"native receive js calling `testNativeMethod`: %@", data);
+        responseCallback(@(200));
+    }];
+
+    // You can register yourself message handler.
+    // register a message handler named `Page`, so the js should call your method that the message handler registered use App.Page.callMethod...
+    self.page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Page" forWebView:self.webView];
+    [self registerScriptMessageHandler:self.page];
+
+    [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
         [self setupRightBarButtonItems:data callback:responseCallback];
     }];
 }
 
 - (void)onClick {
-    [self.messageHandler callMethod:@"showAlert" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
-        NSLog(@"native receive js response: %@", responseData);
+    [self.messageHandler callMethod:@"log" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
+        NSLog(@"native got js response for `log`: %@", responseData);
     }];
 }
 
