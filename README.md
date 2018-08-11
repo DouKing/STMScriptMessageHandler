@@ -11,7 +11,9 @@ iOS 8.0+
 
 ## Usage
 
-```
+- Native side
+
+```objc
 
 // Use `self.messageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
 [self.messageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
@@ -33,6 +35,22 @@ self.page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"
 [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
     [self setupRightBarButtonItems:data callback:responseCallback];
 }];
+
+```
+
+- JS side
+
+```js
+
+App.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(data){
+                        log('JS got native `testNativeMethod` response', data);
+                     });
+
+App.Bridge.registerMethod('log', function(data, callback){
+			               var message = JSON.parse(data);
+			               log('Native calling js method `log`', message);
+			               callback({key: 'from js', value: 'something'});
+						});
 
 ```
 
