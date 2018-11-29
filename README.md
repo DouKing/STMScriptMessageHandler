@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/cocoapods/l/STMWebViewController.svg?style=flat)](https://cocoapods.org/pods/STMWebViewController)
 [![Platform](https://img.shields.io/cocoapods/p/STMWebViewController.svg?style=flat)](https://cocoapods.org/pods/STMWebViewController)
 
+![capture](./Capture.gif)
+
 ## Requirements
 
 iOS 8.0+
@@ -13,7 +15,7 @@ iOS 8.0+
 
 - Native side
 
-```objc
+```Objc
 
 // Use `self.messageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
 [self.messageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
@@ -35,7 +37,6 @@ self.page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"
 [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
     [self setupRightBarButtonItems:data callback:responseCallback];
 }];
-
 ```
 
 - JS side
@@ -47,11 +48,10 @@ App.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(da
                      });
 
 App.Bridge.registerMethod('log', function(data, callback){
-			               var message = JSON.parse(data);
-			               log('Native calling js method `log`', message);
-			               callback({key: 'from js', value: 'something'});
-						});
-
+                           var message = JSON.parse(data);
+                           log('Native calling js method `log`', message);
+                           callback({key: 'from js', value: 'something'});
+                        });
 ```
 
 ## Installation
