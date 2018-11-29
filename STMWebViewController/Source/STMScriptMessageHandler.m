@@ -8,9 +8,14 @@
 #import "STMScriptMessageHandler.h"
 
 #define STM_JS_FUNC(x, ...) [NSString stringWithFormat:@#x ,##__VA_ARGS__]
+#define WEAK_SELF       __weak typeof(self) __weak_self__ = self
+#define STRONG_SELF     __strong typeof(__weak_self__) self = __weak_self__
 
 static NSString * const kSTMApp = @"App";
 static NSString * const kSTMNativeCallback = @"nativeCallback";
+
+static NSString * const kSTMMessageParameterNameKey = @"name";
+static NSString * const kSTMMessageParameterInfoKey = @"info";
 
 @interface STMScriptMessageHandler ()
 
@@ -38,9 +43,11 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     [self _addJS1];
     [self _addJS2];
     [self _addJS3];
+    WEAK_SELF;
     [self registerMethod:kSTMNativeCallback handler:^(NSDictionary * _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
-        NSString *methodName = data[@"name"];
-        NSDictionary *info = data[@"info"];
+        STRONG_SELF;
+        NSString *methodName = data[kSTMMessageParameterNameKey];
+        NSDictionary *info = data[kSTMMessageParameterInfoKey];
         STMResponseCallback jsResponse = self.jsResponseHandlers[methodName];
         !jsResponse ?: jsResponse(info);
     }];
@@ -61,6 +68,7 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     NSString *formatParameter = [self _formatParameters:parameters];
     NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@', '%@'), kSTMApp, self.handlerName, methodName, formatParameter);
     [self.webView evaluateJavaScript:js completionHandler:nil];
+    [self _debug:@"native call js's method" method:methodName parameters:parameters];
 }
 
 #pragma mark - Private
@@ -157,18 +165,30 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
     return formatParameter;
 }
 
+- (void)_debug:(NSString *)name method:(NSString *)method parameters:(NSDictionary *)parameters {
+#ifdef DEBUG
+    NSString *debug = STM_JS_FUNC([%@] %@: %@, name, method, parameters);
+    NSLog(@"%@", debug);
+#endif
+}
+
 #pragma mark - WKScriptMessageHandler
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
     if (![message.name isEqualToString:self.handlerName]) { return; }
-    NSString *method = message.body[@"name"];
-    NSDictionary *parameter = message.body[@"info"];
+    NSString *method = message.body[kSTMMessageParameterNameKey];
+    NSDictionary *parameter = message.body[kSTMMessageParameterInfoKey];
     STMHandler handler = self.methodHandlers[method];
     if ([method isEqualToString:kSTMNativeCallback]) {
         handler(parameter, nil);
+        [self _debug:@"native receive js's response" method:parameter[kSTMMessageParameterNameKey] parameters:parameter[kSTMMessageParameterInfoKey]];
     } else {
-        handler(parameter, ^(id info){
+        [self _debug:@"js call native's method" method:method parameters:parameter];
+        WEAK_SELF;
+        handler(parameter, ^(id info) {
+            STRONG_SELF;
             [self _response:method parameter:info];
+            [self _debug:@"js receive native's response" method:method parameters:info];
         });
     }
 }
