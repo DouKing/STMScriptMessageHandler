@@ -6,7 +6,6 @@
 //
 
 @import UIKit;
-@import WebKit;
 #import "STMScriptMessageHandler.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,9 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// register your message handler in this method
 - (void)prepareScriptMessageHandler NS_REQUIRES_SUPER;
-
 - (NSArray<__kindof STMScriptMessageHandler *> *)registeredMessageHandlers;
-- (void)registerScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler;
 
 @end
 

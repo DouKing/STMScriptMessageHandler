@@ -82,8 +82,6 @@
 			children = (
 				B8155B882116DB9600FD0739 /* STMScriptMessageHandler.h */,
 				B8155B862116DB9600FD0739 /* STMScriptMessageHandler.m */,
-				B8155B872116DB9600FD0739 /* STMWebViewController.h */,
-				B8155B892116DB9600FD0739 /* STMWebViewController.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -93,6 +91,8 @@
 			children = (
 				B8155B6F2116DAA900FD0739 /* AppDelegate.h */,
 				B8155B702116DAA900FD0739 /* AppDelegate.m */,
+				B8155B872116DB9600FD0739 /* STMWebViewController.h */,
+				B8155B892116DB9600FD0739 /* STMWebViewController.m */,
 				B8155B952116DBF700FD0739 /* STMViewController.h */,
 				B8155B8B2116DB9700FD0739 /* STMViewController.m */,
 				B8155B8D2116DB9700FD0739 /* index.html */,

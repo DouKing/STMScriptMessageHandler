@@ -27,4 +27,11 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 
 @end
 
+@interface WKWebView (STMScriptMessage)
+
+- (void)stm_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler;
+- (NSArray<STMScriptMessageHandler *> *)stm_registeredMessageHandlers;
+
+@end
+
 NS_ASSUME_NONNULL_END

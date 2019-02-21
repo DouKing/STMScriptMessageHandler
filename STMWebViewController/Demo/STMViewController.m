@@ -52,7 +52,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
     // You can register yourself message handler.
     // register a message handler named `Page`, so the js should call your method that the message handler registered use App.Page.callMethod...
     self.page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Page" forWebView:self.webView];
-    [self registerScriptMessageHandler:self.page];
+    [self.webView stm_addScriptMessageHandler:self.page];
 
     [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
         [self setupRightBarButtonItems:data callback:responseCallback];

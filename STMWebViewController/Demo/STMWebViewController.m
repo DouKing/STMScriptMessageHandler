@@ -13,7 +13,6 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
 @interface STMWebViewController ()<WKUIDelegate>
 
 @property (nonatomic, strong, readwrite) WKWebView *webView;
-@property (nonatomic, strong) NSMutableArray<__kindof STMScriptMessageHandler *> *messageHandlers;
 
 @end
 
@@ -22,9 +21,6 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
 - (void)dealloc {
     [self _removeObser];
     [_webView stopLoading];
-    for (STMScriptMessageHandler *messageHandler in _messageHandlers) {
-        [self _removeScriptMessageHandler:messageHandler];
-    }
 }
 
 - (instancetype)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
@@ -49,20 +45,15 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     self.webView.frame = self.view.bounds;
-    self.progressView.frame = CGRectMake(0, self.webView.scrollView.contentInset.top - self.webView.scrollView.contentOffset.y,
+    self.progressView.frame = CGRectMake(0, self.webView.scrollView.contentInset.top -
+                                            self.webView.scrollView.contentOffset.y,
                                          CGRectGetWidth(self.navigationController.navigationBar.frame), 2);
-}
-
-- (void)registerScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler {
-    NSAssert([msgHandler isKindOfClass:STMScriptMessageHandler.class], @"");
-    [self _addScriptMessageHandler:msgHandler];
-    [self.messageHandlers addObject:msgHandler];
 }
 
 - (void)prepareScriptMessageHandler {
     STMScriptMessageHandler *messageHandler = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Bridge" forWebView:self.webView];
     _messageHandler = messageHandler;
-    [self registerScriptMessageHandler:messageHandler];
+    [self.webView stm_addScriptMessageHandler:messageHandler];
 }
 
 #pragma mark - Private Methods
@@ -70,17 +61,6 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
 - (void)_initial {
     [self prepareScriptMessageHandler];
     [self _addObserver];
-}
-
-- (void)_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
-    WKUserContentController *userContentController = self.webView.configuration.userContentController;
-    [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
-    [userContentController addScriptMessageHandler:messageHandler name:messageHandler.handlerName];
-}
-
-- (void)_removeScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
-    WKUserContentController *userContentController = self.webView.configuration.userContentController;
-    [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
 }
 
 - (void)_addObserver {
@@ -176,15 +156,8 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     return _progressView;
 }
 
-- (NSMutableArray<STMScriptMessageHandler *> *)messageHandlers {
-    if (!_messageHandlers) {
-        _messageHandlers = [NSMutableArray array];
-    }
-    return _messageHandlers;
-}
-
 - (NSArray<STMScriptMessageHandler *> *)registeredMessageHandlers {
-    return _messageHandlers;
+    return [self.webView stm_registeredMessageHandlers];
 }
 
 @end
