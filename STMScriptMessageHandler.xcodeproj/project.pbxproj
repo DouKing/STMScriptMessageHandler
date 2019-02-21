@@ -19,7 +19,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B8155B6C2116DAA900FD0739 /* STMWebViewController.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = STMWebViewController.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8155B6C2116DAA900FD0739 /* STMScriptMessageHandler.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = STMScriptMessageHandler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8155B6F2116DAA900FD0739 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		B8155B702116DAA900FD0739 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		B8155B762116DAA900FD0739 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -50,7 +50,7 @@
 		B8155B632116DAA900FD0739 = {
 			isa = PBXGroup;
 			children = (
-				B8155B6E2116DAA900FD0739 /* STMWebViewController */,
+				B8155B6E2116DAA900FD0739 /* STMScriptMessageHandler */,
 				B8155B6D2116DAA900FD0739 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -58,12 +58,12 @@
 		B8155B6D2116DAA900FD0739 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B8155B6C2116DAA900FD0739 /* STMWebViewController.app */,
+				B8155B6C2116DAA900FD0739 /* STMScriptMessageHandler.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		B8155B6E2116DAA900FD0739 /* STMWebViewController */ = {
+		B8155B6E2116DAA900FD0739 /* STMScriptMessageHandler */ = {
 			isa = PBXGroup;
 			children = (
 				B8155B852116DB9600FD0739 /* Source */,
@@ -74,7 +74,7 @@
 				B8155B7D2116DAAE00FD0739 /* Info.plist */,
 				B8155B7E2116DAAE00FD0739 /* main.m */,
 			);
-			path = STMWebViewController;
+			path = STMScriptMessageHandler;
 			sourceTree = "<group>";
 		};
 		B8155B852116DB9600FD0739 /* Source */ = {
@@ -103,9 +103,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B8155B6B2116DAA900FD0739 /* STMWebViewController */ = {
+		B8155B6B2116DAA900FD0739 /* STMScriptMessageHandler */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B8155B822116DAAE00FD0739 /* Build configuration list for PBXNativeTarget "STMWebViewController" */;
+			buildConfigurationList = B8155B822116DAAE00FD0739 /* Build configuration list for PBXNativeTarget "STMScriptMessageHandler" */;
 			buildPhases = (
 				B8155B682116DAA900FD0739 /* Sources */,
 				B8155B692116DAA900FD0739 /* Frameworks */,
@@ -115,9 +115,9 @@
 			);
 			dependencies = (
 			);
-			name = STMWebViewController;
+			name = STMScriptMessageHandler;
 			productName = STMWebViewController;
-			productReference = B8155B6C2116DAA900FD0739 /* STMWebViewController.app */;
+			productReference = B8155B6C2116DAA900FD0739 /* STMScriptMessageHandler.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -133,7 +133,7 @@
 					};
 				};
 			};
-			buildConfigurationList = B8155B672116DAA900FD0739 /* Build configuration list for PBXProject "STMWebViewController" */;
+			buildConfigurationList = B8155B672116DAA900FD0739 /* Build configuration list for PBXProject "STMScriptMessageHandler" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -146,7 +146,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				B8155B6B2116DAA900FD0739 /* STMWebViewController */,
+				B8155B6B2116DAA900FD0739 /* STMScriptMessageHandler */,
 			);
 		};
 /* End PBXProject section */
@@ -315,13 +315,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = STMWebViewController/Info.plist;
+				INFOPLIST_FILE = STMScriptMessageHandler/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = DouKing.STMWebViewController;
+				PRODUCT_BUNDLE_IDENTIFIER = DouKing.STMScriptMessageHandler;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -332,13 +332,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				INFOPLIST_FILE = STMWebViewController/Info.plist;
+				INFOPLIST_FILE = STMScriptMessageHandler/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = DouKing.STMWebViewController;
+				PRODUCT_BUNDLE_IDENTIFIER = DouKing.STMScriptMessageHandler;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -347,7 +347,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		B8155B672116DAA900FD0739 /* Build configuration list for PBXProject "STMWebViewController" */ = {
+		B8155B672116DAA900FD0739 /* Build configuration list for PBXProject "STMScriptMessageHandler" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B8155B802116DAAE00FD0739 /* Debug */,
@@ -356,7 +356,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B8155B822116DAAE00FD0739 /* Build configuration list for PBXNativeTarget "STMWebViewController" */ = {
+		B8155B822116DAAE00FD0739 /* Build configuration list for PBXNativeTarget "STMScriptMessageHandler" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				B8155B832116DAAE00FD0739 /* Debug */,
