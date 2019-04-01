@@ -1,3 +1,6 @@
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+[![LICENSE](https://img.shields.io/badge/license-NPL%20(The%20996%20Prohibited%20License)-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
+
 # STMScriptMessageHandler
 
 ![capture](./Capture.gif)
@@ -16,11 +19,11 @@ iOS 8.0+
 
 ```objectivec
 
-//When the native register a `STMScriptMessageHandler` called Bridge, ths js register a object called `App.Bridge`.
+//When the native register a STMScriptMessageHandler called `Bridge`, the js register a object called `App.Bridge`.
 STMScriptMessageHandler *messageHandler = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Bridge" forWebView:self.webView];
 [self.webView stm_addScriptMessageHandler:messageHandler];
 
-// register a message handler named `Page`, so the js should call your method (that the message handler registered) use App.Page.callMethod...
+// register a message handler named `Page`, so the js should call your method (that the message handler registered) use `App.Page.callMethod...`
 STMScriptMessageHandler *page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Page" forWebView:self.webView];
 [self.webView registerScriptMessageHandler:page];
 
@@ -58,4 +61,4 @@ pod 'STMScriptMessageHandler'
 
 ## License
 
-STMScriptMessageHandler is available under the MIT license. See the LICENSE file for more info.
+STMScriptMessageHandler is available under the MIT license and 996ICU license. See file `LICENSE.MIT` and `LICENSE.NPL` for more info.
