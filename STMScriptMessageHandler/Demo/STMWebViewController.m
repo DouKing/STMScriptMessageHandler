@@ -50,16 +50,9 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
                                          CGRectGetWidth(self.navigationController.navigationBar.frame), 2);
 }
 
-- (void)prepareScriptMessageHandler {
-    STMScriptMessageHandler *messageHandler = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Bridge" forWebView:self.webView];
-    _messageHandler = messageHandler;
-    [self.webView stm_addScriptMessageHandler:messageHandler];
-}
-
 #pragma mark - Private Methods
 
 - (void)_initial {
-    [self prepareScriptMessageHandler];
     [self _addObserver];
 }
 
@@ -154,10 +147,6 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
         _progressView.trackTintColor = [UIColor lightGrayColor];
     }
     return _progressView;
-}
-
-- (NSArray<STMScriptMessageHandler *> *)registeredMessageHandlers {
-    return [self.webView stm_registeredMessageHandlers];
 }
 
 @end

@@ -17,6 +17,7 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 
 @property (nonatomic, copy, readonly) NSString *handlerName;
 
++ (instancetype)new NS_UNAVAILABLE;
 - (instancetype)init NS_UNAVAILABLE;
 - (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(__weak WKWebView *)webView;
 
@@ -27,11 +28,5 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 
 @end
 
-@interface WKWebView (STMScriptMessage)
-
-- (void)stm_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler;
-- (NSArray<STMScriptMessageHandler *> *)stm_registeredMessageHandlers;
-
-@end
 
 NS_ASSUME_NONNULL_END

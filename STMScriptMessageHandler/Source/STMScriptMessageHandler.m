@@ -6,12 +6,10 @@
 //
 
 #import "STMScriptMessageHandler.h"
-#import <objc/runtime.h>
 
 #define STM_JS_FUNC(x, ...) [NSString stringWithFormat:@#x ,##__VA_ARGS__]
 #define WEAK_SELF       __weak typeof(self) __weak_self__ = self
 #define STRONG_SELF     __strong typeof(__weak_self__) self = __weak_self__
-void _STMObjcSwizzMethod(Class aClass, SEL originSelector, SEL swizzSelector);
 
 static NSString * const kSTMApp = @"App";
 static NSString * const kSTMNativeCallback = @"nativeCallback";
@@ -212,72 +210,3 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
 }
 
 @end
-
-#pragma mark -
-
-static char * const kSTMWebViewScriptMessageHandlersKey = "kSTMWebViewScriptMessageHandlersKey";
-
-@implementation WKWebView (STMScriptMessage)
-
-+ (void)load {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        SEL systemSel = NSSelectorFromString(@"dealloc");
-        SEL swizzSel = @selector(stm_dealloc);
-        _STMObjcSwizzMethod(self, systemSel, swizzSel);
-    });
-}
-
-- (void)stm_dealloc {
-    for (STMScriptMessageHandler *messageHandler in [self stm_scriptMessageHandlers]) {
-        [self _stm_removeScriptMessageHandler:messageHandler];
-    }
-}
-
-- (void)stm_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)msgHandler {
-    [[self stm_scriptMessageHandlers] addObject:msgHandler];
-    [self _stm_addScriptMessageHandler:msgHandler];
-}
-
-- (NSArray<STMScriptMessageHandler *> *)stm_registeredMessageHandlers {
-    return [[self stm_scriptMessageHandlers] copy];
-}
-
-- (void)_stm_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
-    WKUserContentController *userContentController = self.configuration.userContentController;
-    [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
-    [userContentController addScriptMessageHandler:messageHandler name:messageHandler.handlerName];
-}
-
-- (void)_stm_removeScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
-    WKUserContentController *userContentController = self.configuration.userContentController;
-    [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
-}
-
-- (NSMutableArray<STMScriptMessageHandler *> *)stm_scriptMessageHandlers {
-    NSMutableArray<STMScriptMessageHandler *> *array = objc_getAssociatedObject(self, kSTMWebViewScriptMessageHandlersKey);
-    if (!array) {
-        array = [NSMutableArray array];
-        objc_setAssociatedObject(self, kSTMWebViewScriptMessageHandlersKey, array, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    }
-    return array;
-}
-
-@end
-
-void _STMObjcSwizzMethod(Class aClass, SEL originSelector, SEL swizzSelector) {
-    Method systemMethod = class_getInstanceMethod(aClass, originSelector);
-    Method swizzMethod = class_getInstanceMethod(aClass, swizzSelector);
-    BOOL isAdd = class_addMethod(aClass,
-                                 originSelector,
-                                 method_getImplementation(swizzMethod),
-                                 method_getTypeEncoding(swizzMethod));
-    if (isAdd) {
-        class_replaceMethod(aClass,
-                            swizzSelector,
-                            method_getImplementation(systemMethod),
-                            method_getTypeEncoding(systemMethod));
-    } else {
-        method_exchangeImplementations(systemMethod, swizzMethod);
-    }
-}

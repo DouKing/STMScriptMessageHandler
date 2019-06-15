@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00E3CA6A22B4E678005C6806 /* WKWebView+STMScriptMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E3CA6922B4E678005C6806 /* WKWebView+STMScriptMessage.m */; };
 		B8155B712116DAA900FD0739 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = B8155B702116DAA900FD0739 /* AppDelegate.m */; };
 		B8155B772116DAA900FD0739 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B8155B752116DAA900FD0739 /* Main.storyboard */; };
 		B8155B792116DAAE00FD0739 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B8155B782116DAAE00FD0739 /* Assets.xcassets */; };
@@ -19,6 +20,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		00E3CA6822B4E678005C6806 /* WKWebView+STMScriptMessage.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "WKWebView+STMScriptMessage.h"; sourceTree = "<group>"; };
+		00E3CA6922B4E678005C6806 /* WKWebView+STMScriptMessage.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "WKWebView+STMScriptMessage.m"; sourceTree = "<group>"; };
 		B8155B6C2116DAA900FD0739 /* STMScriptMessageHandler.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = STMScriptMessageHandler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8155B6F2116DAA900FD0739 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		B8155B702116DAA900FD0739 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -82,6 +85,8 @@
 			children = (
 				B8155B882116DB9600FD0739 /* STMScriptMessageHandler.h */,
 				B8155B862116DB9600FD0739 /* STMScriptMessageHandler.m */,
+				00E3CA6822B4E678005C6806 /* WKWebView+STMScriptMessage.h */,
+				00E3CA6922B4E678005C6806 /* WKWebView+STMScriptMessage.m */,
 			);
 			path = Source;
 			sourceTree = "<group>";
@@ -173,6 +178,7 @@
 				B8155B8E2116DB9700FD0739 /* STMScriptMessageHandler.m in Sources */,
 				B8155B902116DB9700FD0739 /* STMViewController.m in Sources */,
 				B8155B8F2116DB9700FD0739 /* STMWebViewController.m in Sources */,
+				00E3CA6A22B4E678005C6806 /* WKWebView+STMScriptMessage.m in Sources */,
 				B8155B7F2116DAAE00FD0739 /* main.m in Sources */,
 				B8155B712116DAA900FD0739 /* AppDelegate.m in Sources */,
 			);

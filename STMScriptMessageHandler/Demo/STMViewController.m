@@ -24,6 +24,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self prepareScriptMessageHandler];
     NSString *path = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
     [self.webView loadHTMLString:[NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil] baseURL:nil];
 
@@ -36,23 +37,20 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 }
 
 - (void)prepareScriptMessageHandler {
-    [super prepareScriptMessageHandler];
-
     // Use `self.messageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
-    [self.messageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
+    [self.webView.stm_defaultScriptMessageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
         NSLog(@"native receive js calling `nslog`: %@", data);
         responseCallback(@"native `nslog` done!");
     }];
 
-    [self.messageHandler registerMethod:@"testNativeMethod" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
+    [self.webView.stm_defaultScriptMessageHandler registerMethod:@"testNativeMethod" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
         NSLog(@"native receive js calling `testNativeMethod`: %@", data);
         responseCallback(@(200));
     }];
 
     // You can register yourself message handler.
     // register a message handler named `Page`, so the js should call your method that the message handler registered use App.Page.callMethod...
-    self.page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Page" forWebView:self.webView];
-    [self.webView stm_addScriptMessageHandler:self.page];
+    self.page = [self.webView stm_addScriptMessageHandlerUseName:@"Page"];
 
     [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
         [self setupRightBarButtonItems:data callback:responseCallback];
@@ -60,7 +58,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 }
 
 - (void)onClick {
-    [self.messageHandler callMethod:@"log" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
+    [self.webView.stm_defaultScriptMessageHandler callMethod:@"log" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
         NSLog(@"native got js response for `log`: %@", responseData);
     }];
 }
