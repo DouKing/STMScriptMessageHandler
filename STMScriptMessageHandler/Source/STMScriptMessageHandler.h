@@ -19,7 +19,7 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 
 + (instancetype)new NS_UNAVAILABLE;
 - (instancetype)init NS_UNAVAILABLE;
-- (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(__weak WKWebView *)webView;
+- (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(WKWebView *)webView;
 
 - (void)prepareJsScript NS_REQUIRES_SUPER;
 

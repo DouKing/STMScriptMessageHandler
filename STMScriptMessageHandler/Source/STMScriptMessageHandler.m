@@ -16,6 +16,8 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
 
 static NSString * const kSTMMessageParameterNameKey = @"name";
 static NSString * const kSTMMessageParameterInfoKey = @"info";
+static NSString * const kSTMMessageParameterCallbackIdKey = @"callbackId";
+static int gSTMCallbackUniqueId = 1;
 
 @interface STMScriptMessageHandler ()
 
@@ -29,7 +31,7 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
 
 @implementation STMScriptMessageHandler
 
-- (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(WKWebView * _Nonnull __weak)webView {
+- (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(WKWebView * _Nonnull)webView {
     self = [super init];
     if (self) {
         _handlerName = [handlerName copy];
@@ -48,7 +50,8 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
         STRONG_SELF;
         NSString *methodName = data[kSTMMessageParameterNameKey];
         NSDictionary *info = data[kSTMMessageParameterInfoKey];
-        STMResponseCallback jsResponse = self.jsResponseHandlers[methodName];
+        NSString *callbackId = data[kSTMMessageParameterCallbackIdKey];
+        STMResponseCallback jsResponse = self.jsResponseHandlers[callbackId ?: methodName];
         !jsResponse ?: jsResponse(info);
     }];
 }
@@ -62,23 +65,25 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
 
 - (void)callMethod:(NSString *)methodName parameters:(NSDictionary *)parameters responseHandler:(STMResponseCallback)handler {
     if (!methodName) { return; }
+    NSString *callbackId = @"";
     if (handler) {
-        self.jsResponseHandlers[methodName] = handler;
+        callbackId = [NSString stringWithFormat:@"cb_%d_%.0f", gSTMCallbackUniqueId++, [NSDate timeIntervalSinceReferenceDate] * 1000];
+        self.jsResponseHandlers[callbackId] = handler;
     }
     NSString *formatParameter = [self _formatParameters:parameters];
-    NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@', '%@'), kSTMApp, self.handlerName, methodName, formatParameter);
+    NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@','%@','%@'), kSTMApp, self.handlerName, methodName, formatParameter, callbackId);
     [self.webView evaluateJavaScript:js completionHandler:nil];
     [self _debug:@"native call js's method" method:methodName parameters:parameters];
 }
 
 #pragma mark - Private
 
-- (void)_response:(NSString *)methodName parameter:(nullable id)parameter {
+- (void)_response:(NSString *)methodName callbackId:(NSString *)callbackId parameter:(nullable id)parameter {
     NSString *formatParameter = [self _formatParameters:parameter];
     NSString *js = STM_JS_FUNC(
         var callback = %@.%@.callback['%@'];
         if (callback) { callback('%@'); }
-        , kSTMApp, self.handlerName, methodName, formatParameter
+        , kSTMApp, self.handlerName, callbackId ?: methodName, formatParameter
     );
     [self.webView evaluateJavaScript:js completionHandler:nil];
 }
@@ -94,7 +99,7 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
          if (!%@.%@.methods) {
              %@.%@.methods = {};
          }
-         %@.%@.methods.methodName = methodHandler;
+         %@.%@.methods[methodName] = methodHandler;
         }
         , kSTMApp, self.handlerName,
         kSTMApp, self.handlerName,
@@ -104,12 +109,20 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
     [self _addJSScript:jsScript forMainFrameOnly:YES];
 
     NSString *js = STM_JS_FUNC(
+        var callbackUniqueId = 1;
         if (!%@.%@.callback) {
            %@.%@.callback = {};
         };
         %@.%@.callMethod = function(name, info, callback) {
-           %@.%@.callback[name] = callback;
-           %@.%@.postMessage({name:name, info:info});
+            var message = {};
+            message['name'] = name;
+            message['info'] = info;
+            if (callback) {
+                var callbackId = 'cb_'+(callbackUniqueId++)+'_'+new Date().getTime();
+                %@.%@.callback[callbackId] = callback;
+                message['callbackId'] = callbackId;
+            }
+            %@.%@.postMessage(message);
         };
         , kSTMApp, self.handlerName,
         kSTMApp, self.handlerName,
@@ -122,10 +135,10 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
 
 - (void)_addJS3 {
     NSString *jsScript = STM_JS_FUNC(
-        %@.%@.nativeCall = function(methodName, info) {
-         var handler = %@.%@.methods.methodName;
+        %@.%@.nativeCall = function(methodName, info, callbackId) {
+         var handler = %@.%@.methods[methodName];
          handler(info, function(data){
-             %@.%@.postMessage({name:'%@', info:{name: methodName, info: data}});
+             %@.%@.postMessage({name:'%@',info:{name:methodName,info:data,callbackId:callbackId}});
          });
         }
         , kSTMApp, self.handlerName,
@@ -178,6 +191,7 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
     if (![message.name isEqualToString:self.handlerName]) { return; }
     NSString *method = message.body[kSTMMessageParameterNameKey];
     NSDictionary *parameter = message.body[kSTMMessageParameterInfoKey];
+    NSString *callbackId = message.body[kSTMMessageParameterCallbackIdKey];
     STMHandler handler = self.methodHandlers[method];
     if ([method isEqualToString:kSTMNativeCallback]) {
         handler(parameter, nil);
@@ -187,7 +201,7 @@ static NSString * const kSTMMessageParameterInfoKey = @"info";
         WEAK_SELF;
         handler(parameter, ^(id info) {
             STRONG_SELF;
-            [self _response:method parameter:info];
+            [self _response:method callbackId:callbackId parameter:info];
             [self _debug:@"js receive native's response" method:method parameters:info];
         });
     }

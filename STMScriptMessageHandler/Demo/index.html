@@ -25,21 +25,28 @@
                                       log('JS got native `setButtons` response', response);
                                       });
         }
+
+        function nslog(data) {
+          App.Bridge.callMethod('nslog', data, function(data) {
+                                log('[1]JS got native `nslog` response', data);
+                              });
+        }
         
-        App.Bridge.callMethod('nslog', {foo: 'foo', bar: 'bar'}, function(data) {
-                                log('JS got native `nslog` response', data);
+        App.Bridge.callMethod('nslog', {bar: 'bar'}, function(data) {
+                                log('[0]JS got native `nslog` response', data);
                               });
 
-        App.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(data){
+        App.Bridge.callMethod('testNativeMethod', {foo:'foo', bar: 'bar'}, function(data){
                                 log('JS got native `testNativeMethod` response', data);
                              });
         App.Bridge.registerMethod('log', function(data, callback){
                        var message = JSON.parse(data);
                        log('Native calling js method `log`', message);
-                       callback({key: 'from js', value: 'something'});
+                       callback({key: 'from js', value: data});
                    });
     </script>
 </head><body>
-    <input type="button" value="Call native method" onclick="setRightButtons()" />
+    <input type="button" value="Set Right Buttons" onclick="setRightButtons()" />
+    <input type="button" value="nslog" onclick="nslog({'foo': 'foo'})" />
     <div id='log'></div>
 </body></html>

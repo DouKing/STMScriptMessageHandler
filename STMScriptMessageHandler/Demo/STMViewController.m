@@ -40,7 +40,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
     // Use `self.messageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
     [self.webView.stm_defaultScriptMessageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
         NSLog(@"native receive js calling `nslog`: %@", data);
-        responseCallback(@"native `nslog` done!");
+        responseCallback([NSString stringWithFormat:@"native `nslog` %@ done!", data]);
     }];
 
     [self.webView.stm_defaultScriptMessageHandler registerMethod:@"testNativeMethod" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
@@ -58,8 +58,11 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 }
 
 - (void)onClick {
-    [self.webView.stm_defaultScriptMessageHandler callMethod:@"log" parameters:@{@"title": @"js method"} responseHandler:^(id  _Nonnull responseData) {
-        NSLog(@"native got js response for `log`: %@", responseData);
+    [self.webView.stm_defaultScriptMessageHandler callMethod:@"log" parameters:@{@"foo": @"foo"} responseHandler:^(id  _Nonnull responseData) {
+        NSLog(@"[0]native got js response for `log`: %@", responseData);
+    }];
+    [self.webView.stm_defaultScriptMessageHandler callMethod:@"log" parameters:@{@"bar": @"bar"} responseHandler:^(id  _Nonnull responseData) {
+        NSLog(@"[1]native got js response for `log`: %@", responseData);
     }];
 }
 
