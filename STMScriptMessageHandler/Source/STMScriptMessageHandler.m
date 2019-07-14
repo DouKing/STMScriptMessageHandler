@@ -48,11 +48,11 @@ static int gSTMCallbackUniqueId = 1;
     WEAK_SELF;
     [self registerMethod:kSTMNativeCallback handler:^(NSDictionary * _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
         STRONG_SELF;
-        NSString *methodName = data[kSTMMessageParameterNameKey];
         NSDictionary *info = data[kSTMMessageParameterInfoKey];
-        NSString *callbackId = data[kSTMMessageParameterCallbackIdKey];
-        STMResponseCallback jsResponse = self.jsResponseHandlers[callbackId ?: methodName];
+        NSString *callbackId = data[kSTMMessageParameterCallbackIdKey] ?: @"";
+        STMResponseCallback jsResponse = self.jsResponseHandlers[callbackId];
         !jsResponse ?: jsResponse(info);
+        [self.jsResponseHandlers removeObjectForKey:callbackId];
     }];
 }
 
@@ -80,10 +80,11 @@ static int gSTMCallbackUniqueId = 1;
 
 - (void)_response:(NSString *)methodName callbackId:(NSString *)callbackId parameter:(nullable id)parameter {
     NSString *formatParameter = [self _formatParameters:parameter];
+    callbackId = callbackId ?: @"";
     NSString *js = STM_JS_FUNC(
         var callback = %@.%@.callback['%@'];
-        if (callback) { callback('%@'); }
-        , kSTMApp, self.handlerName, callbackId ?: methodName, formatParameter
+        if (callback) { callback('%@'); delete %@.%@.callback.%@}
+        , kSTMApp, self.handlerName, callbackId, formatParameter, kSTMApp, self.handlerName, callbackId
     );
     [self _evaluateJavaScript:js completionHandler:nil];
 }
