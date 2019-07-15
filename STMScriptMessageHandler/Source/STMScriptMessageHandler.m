@@ -72,7 +72,7 @@ static int gSTMCallbackUniqueId = 1;
     }
     NSString *formatParameter = [self _formatParameters:parameters];
     NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@','%@','%@'), kSTMApp, self.handlerName, methodName, formatParameter, callbackId);
-    [self.webView evaluateJavaScript:js completionHandler:nil];
+    [self _evaluateJavaScript:js completionHandler:nil];
     [self _debug:@"native call js's method" method:methodName parameters:parameters];
 }
 
@@ -85,7 +85,7 @@ static int gSTMCallbackUniqueId = 1;
         if (callback) { callback('%@'); }
         , kSTMApp, self.handlerName, callbackId ?: methodName, formatParameter
     );
-    [self.webView evaluateJavaScript:js completionHandler:nil];
+    [self _evaluateJavaScript:js completionHandler:nil];
 }
 
 - (void)_addJS1 {
@@ -157,6 +157,13 @@ static int gSTMCallbackUniqueId = 1;
                                                       injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                                                    forMainFrameOnly:flag];
     [self.webView.configuration.userContentController addUserScript:userScript];
+}
+
+- (void)_evaluateJavaScript:(NSString *)javaScriptString
+          completionHandler:(void (^ _Nullable)(_Nullable id info, NSError * _Nullable error))completionHandler {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self.webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+    });
 }
 
 - (NSString *)_formatParameters:(NSDictionary *)parameters {
