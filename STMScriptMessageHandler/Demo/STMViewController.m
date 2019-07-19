@@ -34,6 +34,13 @@ static NSInteger const kRightBarItemBaseTag = 3001;
     [btn addTarget:self action:@selector(onClick) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn];
     btn.center = CGPointMake(self.view.center.x, btn.center.y);
+
+    btn = [UIButton buttonWithType:UIButtonTypeSystem];
+    btn.frame = CGRectMake(0, self.view.frame.size.height - 250, 100, 50);
+    [btn setTitle:@"Save callback" forState:UIControlStateNormal];
+    [btn addTarget:self action:@selector(test) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:btn];
+    btn.center = CGPointMake(self.view.center.x, btn.center.y);
 }
 
 - (void)prepareScriptMessageHandler {
@@ -59,10 +66,13 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 
 - (void)onClick {
     [self.webView.stm_defaultScriptMessageHandler callMethod:@"log" parameters:@{@"foo": @"foo"} responseHandler:^(id  _Nonnull responseData) {
-        NSLog(@"[0]native got js response for `log`: %@", responseData);
+        NSLog(@"native got js response for `log`: %@", responseData);
     }];
-    [self.webView.stm_defaultScriptMessageHandler callMethod:@"log" parameters:@{@"bar": @"bar"} responseHandler:^(id  _Nonnull responseData) {
-        NSLog(@"[1]native got js response for `log`: %@", responseData);
+}
+
+- (void)test {
+    [self.webView.stm_defaultScriptMessageHandler callMethod:@"test" parameters:@{} responseHandler:^(id  _Nonnull responseData) {
+        NSLog(@"native got js response for `test`: %@", responseData);
     }];
 }
 

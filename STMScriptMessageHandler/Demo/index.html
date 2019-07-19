@@ -9,6 +9,8 @@
         .logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
     </style><script language="javascript">
         var uniqueId = 1;
+        var testCallback;
+
         function log(message, data) {
             var log = document.getElementById('log')
             var el = document.createElement('div')
@@ -18,35 +20,48 @@
             else { log.appendChild(el) }
         }
         function setRightButtons() {
-            var buttons = [{"title":'按钮0'}, {"title":'按钮1'}];
-            log('JS calling native method "setButtons"', buttons);
-            App.Page.callMethod('setButtons', buttons, function(index){
-                                      var response = '点击了按钮' + index;
-                                      log('JS got native `setButtons` response', response);
-                                      });
+          var buttons = [{ "title": '按钮0' }, { "title": '按钮1' }];
+          log('JS calling native method "setButtons"', buttons);
+          App.Page.callMethod('setButtons', buttons, function (index) {
+            var response = '点击了按钮' + index;
+            log('JS got native `setButtons` response', response);
+          });
         }
 
         function nslog(data) {
-          App.Bridge.callMethod('nslog', data, function(data) {
-                                log('[1]JS got native `nslog` response', data);
-                              });
+          App.Bridge.callMethod('nslog', data, function (data) {
+            log('JS got native `nslog` response', data);
+          });
         }
-        
-        App.Bridge.callMethod('nslog', {bar: 'bar'}, function(data) {
-                                log('[0]JS got native `nslog` response', data);
-                              });
 
-        App.Bridge.callMethod('testNativeMethod', {foo:'foo', bar: 'bar'}, function(data){
-                                log('JS got native `testNativeMethod` response', data);
-                             });
-        App.Bridge.registerMethod('log', function(data, callback){
-                       var message = JSON.parse(data);
-                       log('Native calling js method `log`', message);
-                       callback({key: 'from js', value: data});
-                   });
+        function test(data) {
+          if (testCallback) {
+            log('calling callback', data);
+            testCallback(data);
+          } else {
+            log('callback is undefined');
+          }
+        }
+
+        App.Bridge.callMethod('testNativeMethod', { foo: 'foo', bar: 'bar' }, function (data) {
+          log('JS got native `testNativeMethod` response', data);
+        });
+                             
+        App.Bridge.registerMethod('log', function (data, callback) {
+          var message = JSON.parse(data);
+          log('Native calling js method `log`', message);
+          callback({ key: 'from js', value: data });
+        });
+        
+        App.Bridge.registerMethod('test', function(data, callback) {
+          log('save callback');
+          testCallback = callback;
+        }, true);
+
     </script>
 </head><body>
     <input type="button" value="Set Right Buttons" onclick="setRightButtons()" />
     <input type="button" value="nslog" onclick="nslog({'foo': 'foo'})" />
+    <input type="button" value="test callback" onclick="test({'key': 'value'})" />
     <div id='log'></div>
 </body></html>
