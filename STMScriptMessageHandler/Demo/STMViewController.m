@@ -37,7 +37,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 }
 
 - (void)prepareScriptMessageHandler {
-    // Use `self.messageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
+    // Use `self.webView.stm_defaultScriptMessageHandler` register a method for js, the js should call this use App.Bridge.callMethod...
     [self.webView.stm_defaultScriptMessageHandler registerMethod:@"nslog" handler:^(id  _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
         NSLog(@"native receive js calling `nslog`: %@", data);
         responseCallback([NSString stringWithFormat:@"native `nslog` %@ done!", data]);
@@ -52,7 +52,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
     // register a message handler named `Page`, so the js should call your method that the message handler registered use App.Page.callMethod...
     self.page = [self.webView stm_addScriptMessageHandlerUseName:@"Page"];
 
-    [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
+    [self.page registerMethod:@"setButtons" reuseHandler:YES handler:^(id data, STMResponseCallback responseCallback) {
         [self setupRightBarButtonItems:data callback:responseCallback];
     }];
 }

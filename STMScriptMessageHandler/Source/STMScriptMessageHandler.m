@@ -13,10 +13,14 @@
 
 static NSString * const kSTMApp = @"App";
 static NSString * const kSTMNativeCallback = @"nativeCallback";
+static NSString * const kSTMMethodHandlerReuseKey = @"kSTMMethodHandlerReuseKey";
+static NSString * const kSTMMethodHandlerIMPKey = @"kSTMMethodHandlerIMPKey";
 
 static NSString * const kSTMMessageParameterNameKey = @"name";
 static NSString * const kSTMMessageParameterInfoKey = @"info";
 static NSString * const kSTMMessageParameterCallbackIdKey = @"callbackId";
+static NSString * const kSTMMessageParameterReuseKey = @"reuse";
+
 static int gSTMCallbackUniqueId = 1;
 
 @interface STMScriptMessageHandler ()
@@ -50,16 +54,24 @@ static int gSTMCallbackUniqueId = 1;
         STRONG_SELF;
         NSDictionary *info = data[kSTMMessageParameterInfoKey];
         NSString *callbackId = data[kSTMMessageParameterCallbackIdKey] ?: @"";
+        BOOL reuse = [data[kSTMMessageParameterReuseKey] boolValue];
         STMResponseCallback jsResponse = self.jsResponseHandlers[callbackId];
         !jsResponse ?: jsResponse(info);
-        [self.jsResponseHandlers removeObjectForKey:callbackId];
+        if (!reuse) {
+            [self.jsResponseHandlers removeObjectForKey:callbackId];
+        }
     }];
 }
 
 - (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler {
-    if (!methodName) { return; }
+    [self registerMethod:methodName reuseHandler:NO handler:handler];
+}
+
+- (void)registerMethod:(NSString *)methodName reuseHandler:(BOOL)reuse handler:(nonnull STMHandler)handler {
+    if (!methodName || !handler) { return; }
     if (handler) {
-        self.methodHandlers[methodName] = handler;
+        self.methodHandlers[methodName] = @{kSTMMethodHandlerReuseKey : @(reuse),
+                                            kSTMMethodHandlerIMPKey : handler};
     }
 }
 
@@ -78,13 +90,13 @@ static int gSTMCallbackUniqueId = 1;
 
 #pragma mark - Private
 
-- (void)_response:(NSString *)methodName callbackId:(NSString *)callbackId parameter:(nullable id)parameter {
+- (void)_response:(NSString *)methodName callbackId:(NSString *)callbackId parameter:(nullable id)parameter deleteCallback:(BOOL)delete {
     NSString *formatParameter = [self _formatParameters:parameter];
     callbackId = callbackId ?: @"";
     NSString *js = STM_JS_FUNC(
         var callback = %@.%@.callback['%@'];
-        if (callback) { callback('%@'); delete %@.%@.callback.%@}
-        , kSTMApp, self.handlerName, callbackId, formatParameter, kSTMApp, self.handlerName, callbackId
+        if (callback) { callback('%@'); if (%d) { delete %@.%@.callback.%@ }}
+        , kSTMApp, self.handlerName, callbackId, formatParameter, delete, kSTMApp, self.handlerName, callbackId
     );
     [self _evaluateJavaScript:js completionHandler:nil];
 }
@@ -96,11 +108,14 @@ static int gSTMCallbackUniqueId = 1;
 
 - (void)_addJS2 {
     NSString *jsScript = STM_JS_FUNC(
-        %@.%@.registerMethod = function(methodName, methodHandler) {
-         if (!%@.%@.methods) {
-             %@.%@.methods = {};
-         }
-         %@.%@.methods[methodName] = methodHandler;
+        %@.%@.registerMethod = function(methodName, methodHandler, reuse) {
+            if (!%@.%@.methods) {
+                %@.%@.methods = {};
+            }
+            var handlerInfo = {};
+            handlerInfo['imp'] = methodHandler;
+            handlerInfo['reuse'] = reuse;
+            %@.%@.methods[methodName] = handlerInfo;
         }
         , kSTMApp, self.handlerName,
         kSTMApp, self.handlerName,
@@ -137,10 +152,12 @@ static int gSTMCallbackUniqueId = 1;
 - (void)_addJS3 {
     NSString *jsScript = STM_JS_FUNC(
         %@.%@.nativeCall = function(methodName, info, callbackId) {
-         var handler = %@.%@.methods[methodName];
-         handler(info, function(data){
-             %@.%@.postMessage({name:'%@',info:{name:methodName,info:data,callbackId:callbackId}});
-         });
+            var handlerInfo = %@.%@.methods[methodName];
+            var reuse = handlerInfo['reuse'];
+            var handler = handlerInfo['imp'];
+            handler(info, function(data){
+                %@.%@.postMessage({name:'%@',info:{name:methodName,info:data,callbackId:callbackId,reuse:reuse}});
+            });
         }
         , kSTMApp, self.handlerName,
         kSTMApp, self.handlerName,
@@ -200,7 +217,9 @@ static int gSTMCallbackUniqueId = 1;
     NSString *method = message.body[kSTMMessageParameterNameKey];
     NSDictionary *parameter = message.body[kSTMMessageParameterInfoKey];
     NSString *callbackId = message.body[kSTMMessageParameterCallbackIdKey];
-    STMHandler handler = self.methodHandlers[method];
+    NSDictionary *handlerInfo = self.methodHandlers[method];
+    STMHandler handler = handlerInfo[kSTMMethodHandlerIMPKey];
+    BOOL reuseHandler = [handlerInfo[kSTMMethodHandlerReuseKey] boolValue];
     if ([method isEqualToString:kSTMNativeCallback]) {
         handler(parameter, nil);
         [self _debug:@"native receive js's response" method:parameter[kSTMMessageParameterNameKey] parameters:parameter[kSTMMessageParameterInfoKey]];
@@ -209,7 +228,7 @@ static int gSTMCallbackUniqueId = 1;
         WEAK_SELF;
         handler(parameter, ^(id info) {
             STRONG_SELF;
-            [self _response:method callbackId:callbackId parameter:info];
+            [self _response:method callbackId:callbackId parameter:info deleteCallback:!reuseHandler];
             [self _debug:@"js receive native's response" method:method parameters:info];
         });
     }
