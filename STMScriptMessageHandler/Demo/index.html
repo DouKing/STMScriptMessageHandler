@@ -48,7 +48,7 @@
         });
                              
         App.Bridge.registerMethod('log', function (data, callback) {
-          var message = JSON.parse(data);
+          var message = data;
           log('Native calling js method `log`', message);
           callback({ key: 'from js', value: data });
         });

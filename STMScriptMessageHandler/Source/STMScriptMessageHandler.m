@@ -82,23 +82,23 @@ static int gSTMCallbackUniqueId = 1;
         callbackId = [NSString stringWithFormat:@"cb_%d_%.0f", gSTMCallbackUniqueId++, [NSDate timeIntervalSinceReferenceDate] * 1000];
         self.jsResponseHandlers[callbackId] = handler;
     }
-    NSString *formatParameter = [self _formatParameters:parameters];
-    NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@','%@','%@'), kSTMApp, self.handlerName, methodName, formatParameter, callbackId);
-    [self _evaluateJavaScript:js completionHandler:nil];
+    NSString *formatParameter = [self _formatParameters:@{@"parameters": parameters}];
+    NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@',JSON.parse('%@').parameters,'%@'), kSTMApp, self.handlerName, methodName, formatParameter, callbackId);
+    [self _evaluateJavaScript:js];
     [self _debug:@"native call js's method" method:methodName parameters:parameters];
 }
 
 #pragma mark - Private
 
 - (void)_response:(NSString *)methodName callbackId:(NSString *)callbackId parameter:(nullable id)parameter deleteCallback:(BOOL)delete {
-    NSString *formatParameter = [self _formatParameters:parameter];
+    NSString *formatParameter = [self _formatParameters:@{@"responseData": parameter}];
     callbackId = callbackId ?: @"";
     NSString *js = STM_JS_FUNC(
         var callback = %@.%@.callback['%@'];
-        if (callback) { callback('%@'); if (%d) { delete %@.%@.callback.%@ }}
+        if (callback) { callback(JSON.parse('%@').responseData); if (%d) { delete %@.%@.callback.%@ }}
         , kSTMApp, self.handlerName, callbackId, formatParameter, delete, kSTMApp, self.handlerName, callbackId
     );
-    [self _evaluateJavaScript:js completionHandler:nil];
+    [self _evaluateJavaScript:js];
 }
 
 - (void)_addJS1 {
@@ -177,11 +177,23 @@ static int gSTMCallbackUniqueId = 1;
     [self.webView.configuration.userContentController addUserScript:userScript];
 }
 
-- (void)_evaluateJavaScript:(NSString *)javaScriptString
-          completionHandler:(void (^ _Nullable)(_Nullable id info, NSError * _Nullable error))completionHandler {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self.webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
-    });
+- (void)_evaluateJavaScript:(NSString *)javaScriptString {
+    void (^task)(void) = ^{
+        __weak typeof(self) __weak_self__ = self;
+        [self.webView evaluateJavaScript:javaScriptString completionHandler:^(id _Nullable info, NSError * _Nullable error) {
+            __strong typeof(__weak_self__) self = __weak_self__;
+            if (error) {
+                [self.webView reload];
+            }
+        }];
+    };
+    if ([NSThread currentThread].isMainThread) {
+        task();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            task();
+        });
+    }
 }
 
 - (NSString *)_formatParameters:(NSDictionary *)parameters {
