@@ -19,11 +19,11 @@ iOS 8.0+
 
 ```objectivec
 
-//When the native register a STMScriptMessageHandler called `Bridge`, the js register a object called `App.Bridge`.
+//When the native register a STMScriptMessageHandler called `Bridge`, the js register a object called `window.Bridge`.
 STMScriptMessageHandler *messageHandler = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Bridge" forWebView:self.webView];
 [self.webView stm_addScriptMessageHandler:messageHandler];
 
-// register a message handler named `Page`, so the js should call your method (that the message handler registered) use `App.Page.callMethod...`
+// register a message handler named `Page`, so the js should call your method (that the message handler registered) use `window.Page.callMethod...`
 STMScriptMessageHandler *page = [[STMScriptMessageHandler alloc] initWithScriptMessageHandlerName:@"Page" forWebView:self.webView];
 [self.webView registerScriptMessageHandler:page];
 
@@ -36,17 +36,16 @@ STMScriptMessageHandler *page = [[STMScriptMessageHandler alloc] initWithScriptM
 - JS side
 
 ```javascript
+// Use js object `window.Bridge` call native method or register method for native.
+window.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(data){
+    log('JS got native `testNativeMethod` response', data);
+});
 
-// Use js object `App.Bridge` call native method or register method for native.
-App.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(data){
-                        log('JS got native `testNativeMethod` response', data);
-                     });
-
-App.Bridge.registerMethod('log', function(data, callback){
-                           var message = JSON.parse(data);
-                           log('Native calling js method `log`', message);
-                           callback({key: 'from js', value: 'something'});
-                        });
+window.Bridge.registerMethod('log', function(data, callback){
+    var message = JSON.parse(data);
+    log('Native calling js method `log`', message);
+    callback({key: 'from js', value: 'something'});
+});
                         
 ```
 
