@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'STMScriptMessageHandler'
-  s.version          = '2.0.2'
+  s.version          = '3.0.0'
   s.summary          = 'A script message handler that conform to the WKScriptMessageHandler protocol. It is used to communicate with js.'
   
   s.description      = <<-DESC
