@@ -11,6 +11,9 @@
         var uniqueId = 1;
         var testCallback;
 
+		var JSBridge = window.Bridge;
+		var JSPage = window.Page;
+
         function log(message, data) {
             var log = document.getElementById('log')
             var el = document.createElement('div')
@@ -19,17 +22,17 @@
             if (log.children.length) { log.insertBefore(el, log.children[0]) }
             else { log.appendChild(el) }
         }
+
         function setRightButtons() {
           var buttons = [{ "title": '按钮0' }, { "title": '按钮1' }];
           log('JS calling native method "setButtons"', buttons);
-          App.Page.callMethod('setButtons', buttons, function (index) {
-            var response = '点击了按钮' + index;
-            log('JS got native `setButtons` response', response);
+		  JSPage.callHandler('setButtons', {'callback': 'handleTapButtonAction', 'data': buttons}, function (result) {
+            log('JS got native `setButtons` response', result);
           });
         }
 
         function nslog(data) {
-          App.Bridge.callMethod('nslog', data, function (data) {
+          JSBridge.callHandler('nslog', data, function (data) {
             log('JS got native `nslog` response', data);
           });
         }
@@ -43,20 +46,25 @@
           }
         }
 
-        App.Bridge.callMethod('testNativeMethod', { foo: 'foo', bar: 'bar' }, function (data) {
+        JSBridge.callHandler('testNativeMethod', { foo: 'foo', bar: 'bar' }, function (data) {
           log('JS got native `testNativeMethod` response', data);
         });
                              
-        App.Bridge.registerMethod('log', function (data, callback) {
+        JSBridge.registerHandler('log', function (data, callback) {
           var message = data;
           log('Native calling js method `log`', message);
           callback({ key: 'from js', value: data });
         });
         
-        App.Bridge.registerMethod('test', function(data, callback) {
+        JSBridge.registerHandler('test', function(data, callback) {
           log('save callback');
           testCallback = callback;
-        }, true);
+        });
+
+		JSPage.registerHandler('handleTapButtonAction', function(index) {
+			var response = '点击了按钮' + index;
+			log('Native calling js method `handleTapButtonAction`', response);
+		});
 
     </script>
 </head><body>

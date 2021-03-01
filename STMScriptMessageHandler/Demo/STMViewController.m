@@ -11,13 +11,13 @@
 static NSInteger const kRightBarItemBaseTag = 3001;
 
 @interface STMViewController ()
-@property (nullable, nonatomic, copy) STMResponseCallback responseCallback;
+@property (nullable, nonatomic, strong) NSString *responseCallback;
 @property (nullable, nonatomic, strong) STMScriptMessageHandler *page;
 
 @end
 
 @interface STMViewController (Demo)
-- (void)setupRightBarButtonItems:(NSArray<NSDictionary *> *)items callback:(STMResponseCallback)responseCallback;
+- (void)setupRightBarButtonItems:(NSDictionary *)data;
 @end
 
 @implementation STMViewController
@@ -59,8 +59,9 @@ static NSInteger const kRightBarItemBaseTag = 3001;
     // register a message handler named `Page`, so the js should call your method that the message handler registered use App.Page.callMethod...
     self.page = [self.webView stm_addScriptMessageHandlerUseName:@"Page"];
 
-    [self.page registerMethod:@"setButtons" reuseHandler:YES handler:^(id data, STMResponseCallback responseCallback) {
-        [self setupRightBarButtonItems:data callback:responseCallback];
+    [self.page registerMethod:@"setButtons" handler:^(id data, STMResponseCallback responseCallback) {
+        [self setupRightBarButtonItems:data];
+		responseCallback(@(YES));
     }];
 }
 
@@ -80,13 +81,14 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 
 @implementation STMViewController (Demo)
 
-- (void)setupRightBarButtonItems:(NSArray<NSDictionary *> *)items callback:(STMResponseCallback)responseCallback {
-    self.responseCallback = responseCallback;
+- (void)setupRightBarButtonItems:(NSDictionary *)data {
+    self.responseCallback = data[@"callback"];
+	NSArray<NSDictionary *> *items = data[@"data"];
     [self _setupNavigationBarButtonItems:items];
 }
 
 - (void)_handleRightBarButtonItemAction:(UIBarButtonItem *)sender {
-    self.responseCallback(@(sender.tag - kRightBarItemBaseTag));
+	[self.page callMethod:self.responseCallback parameters:@(sender.tag - kRightBarItemBaseTag) responseHandler:nil];
 }
 
 - (void)_setupNavigationBarButtonItems:(NSArray<NSDictionary *> *)items {

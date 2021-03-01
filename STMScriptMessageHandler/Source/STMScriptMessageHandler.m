@@ -6,6 +6,7 @@
 //
 
 #import "STMScriptMessageHandler.h"
+#import "STMScriptMessageHandler_JS.h"
 
 #define STM_JS_FUNC(x, ...) [NSString stringWithFormat:@#x ,##__VA_ARGS__]
 #define WEAK_SELF       __weak typeof(self) __weak_self__ = self
@@ -16,10 +17,11 @@ static NSString * const kSTMNativeCallback = @"nativeCallback";
 static NSString * const kSTMMethodHandlerReuseKey = @"kSTMMethodHandlerReuseKey";
 static NSString * const kSTMMethodHandlerIMPKey = @"kSTMMethodHandlerIMPKey";
 
-static NSString * const kSTMMessageParameterNameKey = @"name";
-static NSString * const kSTMMessageParameterInfoKey = @"info";
+static NSString * const kSTMMessageParameterNameKey = @"handlerName";
+static NSString * const kSTMMessageParameterInfoKey = @"data";
+static NSString * const kSTMMessageParameterResponseKey = @"responseData";
 static NSString * const kSTMMessageParameterCallbackIdKey = @"callbackId";
-static NSString * const kSTMMessageParameterReuseKey = @"reuse";
+static NSString * const kSTMMessageParameterResponseIdKey = @"responseId";
 
 static int gSTMCallbackUniqueId = 1;
 
@@ -46,124 +48,84 @@ static int gSTMCallbackUniqueId = 1;
 }
 
 - (void)prepareJsScript {
-    [self _addJS1];
-    [self _addJS2];
-    [self _addJS3];
-    WEAK_SELF;
-    [self registerMethod:kSTMNativeCallback handler:^(NSDictionary * _Nonnull data, STMResponseCallback  _Nullable responseCallback) {
-        STRONG_SELF;
-        NSDictionary *info = data[kSTMMessageParameterInfoKey];
-        NSString *callbackId = data[kSTMMessageParameterCallbackIdKey] ?: @"";
-        BOOL reuse = [data[kSTMMessageParameterReuseKey] boolValue];
-        STMResponseCallback jsResponse = self.jsResponseHandlers[callbackId];
-        !jsResponse ?: jsResponse(info);
-        if (!reuse) {
-            [self.jsResponseHandlers removeObjectForKey:callbackId];
-        }
-    }];
+	NSString *js = STMScriptMessageHandler_js(self.handlerName);
+//	[self _evaluateJavaScript:js];
+	[self _addJSScript:js forMainFrameOnly:NO];
 }
 
-- (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler {
-    [self registerMethod:methodName reuseHandler:NO handler:handler];
-}
-
-- (void)registerMethod:(NSString *)methodName reuseHandler:(BOOL)reuse handler:(nonnull STMHandler)handler {
+- (void)registerMethod:(NSString *)methodName handler:(nonnull STMHandler)handler {
     if (!methodName || !handler) { return; }
     if (handler) {
-        self.methodHandlers[methodName] = @{kSTMMethodHandlerReuseKey : @(reuse),
-                                            kSTMMethodHandlerIMPKey : handler};
+		self.methodHandlers[methodName] = handler;
     }
 }
 
-- (void)callMethod:(NSString *)methodName parameters:(NSDictionary *)parameters responseHandler:(STMResponseCallback)handler {
+- (void)removeMethod:(NSString *)methodName {
+	if (!methodName) { return; }
+	[self.methodHandlers removeObjectForKey:methodName];
+}
+
+- (void)callMethod:(NSString *)methodName parameters:(id)parameters responseHandler:(STMResponseCallback)handler {
     if (!methodName) { return; }
-    NSString *callbackId = @"";
+	NSMutableDictionary *message = [NSMutableDictionary dictionary];
+	if (parameters) {
+		message[kSTMMessageParameterInfoKey] = parameters;
+	}
+
     if (handler) {
-        callbackId = [NSString stringWithFormat:@"cb_%d_%.0f", gSTMCallbackUniqueId++, [NSDate timeIntervalSinceReferenceDate] * 1000];
+        NSString *callbackId = [NSString stringWithFormat:@"cb_%d_%.0f", gSTMCallbackUniqueId++, [NSDate timeIntervalSinceReferenceDate] * 1000];
         self.jsResponseHandlers[callbackId] = handler;
+		message[kSTMMessageParameterCallbackIdKey] = callbackId;
     }
-    NSString *formatParameter = [self _formatParameters:@{@"parameters": parameters}];
-    NSString *js = STM_JS_FUNC(%@.%@.nativeCall('%@',JSON.parse('%@').parameters,'%@'), kSTMApp, self.handlerName, methodName, formatParameter, callbackId);
-    [self _evaluateJavaScript:js];
-    [self _debug:@"native call js's method" method:methodName parameters:parameters];
+
+	message[kSTMMessageParameterNameKey] = methodName;
+	[self _dispatchMessage:message];
 }
 
 #pragma mark - Private
 
-- (void)_response:(NSString *)methodName callbackId:(NSString *)callbackId parameter:(nullable id)parameter deleteCallback:(BOOL)delete {
-    NSString *formatParameter = [self _formatParameters:@{@"responseData": parameter}];
-    callbackId = callbackId ?: @"";
-    NSString *js = STM_JS_FUNC(
-        var callback = %@.%@.callback['%@'];
-        if (callback) { callback(JSON.parse('%@').responseData); if (%d) { delete %@.%@.callback.%@ }}
-        , kSTMApp, self.handlerName, callbackId, formatParameter, delete, kSTMApp, self.handlerName, callbackId
-    );
-    [self _evaluateJavaScript:js];
+//给 js 端发送消息
+- (void)_dispatchMessage:(NSDictionary *)message {
+	NSString *messageJSON = [self _formatParameters:message];
+	NSString* javascriptCommand = [NSString stringWithFormat:@"%@._handleMessageFromObjC('%@');", self.handlerName, messageJSON];
+	[self _evaluateJavaScript:javascriptCommand];
 }
 
-- (void)_addJS1 {
-    NSString *jsScript = STM_JS_FUNC(var %@ = window.webkit.messageHandlers;, kSTMApp);
-    [self _addJSScript:jsScript forMainFrameOnly:YES];
-}
+//处理收到的 js 端消息
+- (void)_flushReceivedMessage:(NSDictionary *)message {
+	if (![message isKindOfClass:NSDictionary.class]) {
+		return;
+	}
 
-- (void)_addJS2 {
-    NSString *jsScript = STM_JS_FUNC(
-        %@.%@.registerMethod = function(methodName, methodHandler, reuse) {
-            if (!%@.%@.methods) {
-                %@.%@.methods = {};
-            }
-            var handlerInfo = {};
-            handlerInfo['imp'] = methodHandler;
-            handlerInfo['reuse'] = reuse;
-            %@.%@.methods[methodName] = handlerInfo;
-        }
-        , kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName
-    );
-    [self _addJSScript:jsScript forMainFrameOnly:YES];
-
-    NSString *js = STM_JS_FUNC(
-        var callbackUniqueId = 1;
-        if (!%@.%@.callback) {
-           %@.%@.callback = {};
-        };
-        %@.%@.callMethod = function(name, info, callback) {
-            var message = {};
-            message['name'] = name;
-            message['info'] = info;
-            if (callback) {
-                var callbackId = 'cb_'+(callbackUniqueId++)+'_'+new Date().getTime();
-                %@.%@.callback[callbackId] = callback;
-                message['callbackId'] = callbackId;
-            }
-            %@.%@.postMessage(message);
-        };
-        , kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName
-    );
-    [self _addJSScript:js forMainFrameOnly:YES];
-}
-
-- (void)_addJS3 {
-    NSString *jsScript = STM_JS_FUNC(
-        %@.%@.nativeCall = function(methodName, info, callbackId) {
-            var handlerInfo = %@.%@.methods[methodName];
-            var reuse = handlerInfo['reuse'];
-            var handler = handlerInfo['imp'];
-            handler(info, function(data){
-                %@.%@.postMessage({name:'%@',info:{name:methodName,info:data,callbackId:callbackId,reuse:reuse}});
-            });
-        }
-        , kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName,
-        kSTMApp, self.handlerName, kSTMNativeCallback
-    );
-    [self _addJSScript:jsScript forMainFrameOnly:YES];
+	NSString *responseId = message[kSTMMessageParameterResponseIdKey];
+	if (responseId) {
+		STMResponseCallback responseCallback = self.jsResponseHandlers[responseId];
+		!responseCallback ?: responseCallback(message[kSTMMessageParameterResponseKey]);
+		[self.jsResponseHandlers removeObjectForKey:responseId];
+	} else {
+		STMResponseCallback responseCallback; {
+			NSString *callbackId = message[kSTMMessageParameterCallbackIdKey];
+			if (callbackId) {
+				responseCallback = ^(id responseData){
+					if (!responseData) {
+						responseData = [NSNull null];
+					}
+					[self _dispatchMessage:@{
+						kSTMMessageParameterResponseIdKey: callbackId,
+						kSTMMessageParameterResponseKey: responseData,
+					}];
+				};
+			} else {
+				responseCallback = ^(id responseData){
+				};
+			}
+		}
+		STMHandler handler = self.methodHandlers[message[kSTMMessageParameterNameKey]];
+		if (!handler) {
+			return;
+		}
+		handler(message[kSTMMessageParameterInfoKey], responseCallback);
+	}
 }
 
 #pragma mark -
@@ -183,6 +145,7 @@ static int gSTMCallbackUniqueId = 1;
         [self.webView evaluateJavaScript:javaScriptString completionHandler:^(id _Nullable info, NSError * _Nullable error) {
             __strong typeof(__weak_self__) self = __weak_self__;
             if (error) {
+				NSLog(@"Error: %@", error);
                 [self.webView reload];
             }
         }];
@@ -226,24 +189,7 @@ static int gSTMCallbackUniqueId = 1;
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
     if (![message.name isEqualToString:self.handlerName]) { return; }
-    NSString *method = message.body[kSTMMessageParameterNameKey];
-    NSDictionary *parameter = message.body[kSTMMessageParameterInfoKey];
-    NSString *callbackId = message.body[kSTMMessageParameterCallbackIdKey];
-    NSDictionary *handlerInfo = self.methodHandlers[method];
-    STMHandler handler = handlerInfo[kSTMMethodHandlerIMPKey];
-    BOOL reuseHandler = [handlerInfo[kSTMMethodHandlerReuseKey] boolValue];
-    if ([method isEqualToString:kSTMNativeCallback]) {
-        handler(parameter, nil);
-        [self _debug:@"native receive js's response" method:parameter[kSTMMessageParameterNameKey] parameters:parameter[kSTMMessageParameterInfoKey]];
-    } else {
-        [self _debug:@"js call native's method" method:method parameters:parameter];
-        WEAK_SELF;
-        handler(parameter, ^(id info) {
-            STRONG_SELF;
-            [self _response:method callbackId:callbackId parameter:info deleteCallback:!reuseHandler];
-            [self _debug:@"js receive native's response" method:method parameters:info];
-        });
-    }
+	[self _flushReceivedMessage:message.body];
 }
 
 #pragma mark - setter & getter

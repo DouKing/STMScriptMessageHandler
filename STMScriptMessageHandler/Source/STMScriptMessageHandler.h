@@ -24,8 +24,9 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 - (void)prepareJsScript NS_REQUIRES_SUPER;
 
 - (void)registerMethod:(NSString *)methodName handler:(STMHandler)handler;
-- (void)registerMethod:(NSString *)methodName reuseHandler:(BOOL)reuse handler:(STMHandler)handler;
-- (void)callMethod:(NSString *)methodName parameters:(NSDictionary *)parameters responseHandler:(STMResponseCallback)handler;
+- (void)removeMethod:(NSString *)methodName;
+
+- (void)callMethod:(NSString *)methodName parameters:(id)parameters responseHandler:(nullable STMResponseCallback)handler;
 
 @end
 
