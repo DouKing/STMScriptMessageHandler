@@ -25,8 +25,6 @@
 #import "STMScriptMessageHandler.h"
 #import "STMScriptMessageHandler_JS.h"
 
-#define STM_JS_FUNC(x, ...) [NSString stringWithFormat:@#x ,##__VA_ARGS__]
-
 static NSString * const kSTMMessageParameterNameKey = @"handlerName";
 static NSString * const kSTMMessageParameterInfoKey = @"data";
 static NSString * const kSTMMessageParameterResponseKey = @"responseData";
@@ -48,6 +46,9 @@ static int gSTMCallbackUniqueId = 1;
 @end
 
 @implementation STMScriptMessageHandler
+
+static BOOL gSTMEnableLog = NO;
++ (void)enableLog { gSTMEnableLog = YES; }
 
 - (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(WKWebView * _Nonnull)webView {
     self = [super init];
@@ -98,6 +99,7 @@ static int gSTMCallbackUniqueId = 1;
 
 //给 js 端发送消息
 - (void)_dispatchMessage:(NSDictionary *)message {
+    [self _debug:@"SEND" parameters:message];
 	NSString *messageJSON = [self _formatParameters:message];
 	NSString* javascriptCommand = [NSString stringWithFormat:@"%@._handleMessageFromObjC('%@');", self.handlerName, messageJSON];
 	[self _evaluateJavaScript:javascriptCommand];
@@ -108,7 +110,8 @@ static int gSTMCallbackUniqueId = 1;
 	if (![message isKindOfClass:NSDictionary.class]) {
 		return;
 	}
-
+    [self _debug:@"RECEIVE" parameters:message];
+    
 	NSString *responseId = message[kSTMMessageParameterResponseIdKey];
 	if (responseId) {
 		STMResponseCallback responseCallback = self.jsResponseHandlers[responseId];
@@ -135,6 +138,7 @@ static int gSTMCallbackUniqueId = 1;
                     void (^replyHandler)(id _Nullable reply, NSString *_Nullable errorMessage) = message[kSTMMessageParameterReplyKey];
                     NSString *resolveId = message[kSTMMessageParameterResolveIdKey];
                     if (replyHandler) {
+                        [self _debug:@"SEND" parameters:responseData];
                         replyHandler(responseData, nil);
                     } else if (resolveId) {
                         [self _dispatchMessage:@{
@@ -170,7 +174,7 @@ static int gSTMCallbackUniqueId = 1;
         [self.webView evaluateJavaScript:javaScriptString completionHandler:^(id _Nullable info, NSError * _Nullable error) {
             __strong typeof(__weak_self__) self = __weak_self__;
             if (error) {
-				NSLog(@"Error: %@", error);
+                [self _log:[NSString stringWithFormat:@"Error: %@", error]];
                 [self.webView reload];
             }
         }];
@@ -185,9 +189,9 @@ static int gSTMCallbackUniqueId = 1;
 }
 
 - (NSString *)_formatParameters:(NSDictionary *)parameters {
-    NSString *formatParameter = nil;;
+    NSString *formatParameter = nil;
     if ([NSJSONSerialization isValidJSONObject:parameters]) {
-        NSData *data = [NSJSONSerialization dataWithJSONObject:parameters options:NSJSONWritingPrettyPrinted error:nil];
+        NSData *data = [NSJSONSerialization dataWithJSONObject:parameters options:0 error:nil];
         formatParameter = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     } else {
         formatParameter = parameters.description;
@@ -203,10 +207,16 @@ static int gSTMCallbackUniqueId = 1;
     return formatParameter;
 }
 
-- (void)_debug:(NSString *)name method:(NSString *)method parameters:(NSDictionary *)parameters {
+- (void)_debug:(NSString *)action parameters:(NSDictionary *)parameters {
 #ifdef DEBUG
-    NSString *debug = STM_JS_FUNC([%@] %@: %@, name, method, parameters);
-    NSLog(@"%@", debug);
+    if (!gSTMEnableLog) { return; }
+    NSLog(@"[%@] %@: %@", self.handlerName, action, parameters);
+#endif
+}
+
+- (void)_log:(NSString *)message {
+#ifdef DEBUG
+    NSLog(@"[%@] %@", self.handlerName, message);
 #endif
 }
 
@@ -222,7 +232,7 @@ static int gSTMCallbackUniqueId = 1;
     
     NSMutableDictionary *parameters = [message.body mutableCopy];
     parameters[kSTMMessageParameterReplyKey] = replyHandler ?: ^(id _Nullable reply, NSString *_Nullable errorMessage){
-        NSLog(@"reply handler is nil");
+        [self _log:@"reply handler is nil"];
     };
     [self _flushReceivedMessage:parameters];
 }
