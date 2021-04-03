@@ -1,75 +1,111 @@
 <!doctype html>
-<html><head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf8">
-    <title>Demo</title>
-    <style type='text/css'>
-        html { font-family:Helvetica; color:#222; }
-        h1 { color:steelblue; font-size:24px; margin-top:24px; }
-        button { margin:0 3px 10px; font-size:12px; }
-        .logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
-    </style><script language="javascript">
-        var uniqueId = 1;
-        var testCallback;
+<html>
 
-		var JSBridge = window.Bridge;
-		var JSPage = window.Page;
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf8">
+  <title>Demo</title>
+  <style type='text/css'>
+    html {
+      font-family: Helvetica;
+      color: #222;
+    }
 
-        function log(message, data) {
-            var log = document.getElementById('log')
-            var el = document.createElement('div')
-            el.className = 'logLine'
-            el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data)
-            if (log.children.length) { log.insertBefore(el, log.children[0]) }
-            else { log.appendChild(el) }
-        }
+    h1 {
+      color: steelblue;
+      font-size: 24px;
+      margin-top: 24px;
+    }
 
-        function setRightButtons() {
-          var buttons = [{ "title": '按钮0' }, { "title": '按钮1' }];
-          log('JS calling native method "setButtons"', buttons);
-		  JSPage.callHandler('setButtons', {'callback': 'handleTapButtonAction', 'data': buttons}, function (result) {
-            log('JS got native `setButtons` response', result);
-          });
-        }
+    button {
+      margin: 0 3px 10px;
+      font-size: 12px;
+    }
 
-        function nslog(data) {
-          JSBridge.callHandler('nslog', data, function (data) {
-            log('JS got native `nslog` response', data);
-          });
-        }
+    .logLine {
+      border-bottom: 1px solid #ccc;
+      padding: 4px 2px;
+      font-family: courier;
+      font-size: 11px;
+    }
+  </style>
+  <script language="javascript">
+    var uniqueId = 1;
+    var testCallback;
 
-        function test(data) {
-          if (testCallback) {
-            log('calling callback', data);
-            testCallback(data);
-          } else {
-            log('callback is undefined');
-          }
-        }
+    var JSBridge = window.Bridge;
+    var JSPage = window.Page;
 
-        JSBridge.callHandler('testNativeMethod', { foo: 'foo', bar: 'bar' }, function (data) {
-          log('JS got native `testNativeMethod` response', data);
-        });
-                             
-        JSBridge.registerHandler('log', function (data, callback) {
-          var message = data;
-          log('Native calling js method `log`', message);
-          callback({ key: 'from js', value: data });
-        });
-        
-        JSBridge.registerHandler('test', function(data, callback) {
-          log('save callback');
-          testCallback = callback;
-        });
+    function log(message, data) {
+      var log = document.getElementById('log')
+      var el = document.createElement('div')
+      el.className = 'logLine'
+      el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data)
+      if (log.children.length) { log.insertBefore(el, log.children[0]) }
+      else { log.appendChild(el) }
+    }
 
-		JSPage.registerHandler('handleTapButtonAction', function(index) {
-			var response = '点击了按钮' + index;
-			log('Native calling js method `handleTapButtonAction`', response);
-		});
+    function setRightButtons() {
+      var buttons = [{ "title": '按钮0' }, { "title": '按钮1' }];
+      log('JS calling native method "setButtons"', buttons);
+      JSPage.callHandler('setButtons', { 'callback': 'handleTapButtonAction', 'data': buttons }, function (result) {
+        log('JS got native `setButtons` response', result);
+      });
+    }
 
-    </script>
-</head><body>
-    <input type="button" value="Set Right Buttons" onclick="setRightButtons()" />
-    <input type="button" value="nslog" onclick="nslog({'foo': 'foo'})" />
-    <input type="button" value="test callback" onclick="test({'key': 'value'})" />
-    <div id='log'></div>
-</body></html>
+    function nslog(data) {
+      JSBridge.callHandler('nslog', data, function (data) {
+        log('JS got native `nslog` response', data);
+      });
+    }
+
+    async function promise(data) {
+      // JSBridge.callHandler('nslog', data).then(
+      //   result => log('JS got native `nslog` response', result),
+      //   error => log('JS got native `nslog` error', error)
+      // )
+
+      var p = JSBridge.callHandler('nslog', data);
+      var result = await p;
+      log('JS got native `nslog` response', result);
+    }
+
+    function test(data) {
+      if (testCallback) {
+        log('calling callback', data);
+        testCallback(data);
+      } else {
+        log('callback is undefined');
+      }
+    }
+
+    JSBridge.callHandler('testNativeMethod', { foo: 'foo', bar: 'bar' }, function (data) {
+      log('JS got native `testNativeMethod` response', data);
+    });
+
+    JSBridge.registerHandler('log', function (data, callback) {
+      var message = data;
+      log('Native calling js method `log`', message);
+      callback({ key: 'from js', value: data });
+    });
+
+    JSBridge.registerHandler('test', function (data, callback) {
+      log('save callback');
+      testCallback = callback;
+    });
+
+    JSPage.registerHandler('handleTapButtonAction', function (index) {
+      var response = '点击了按钮' + index;
+      log('Native calling js method `handleTapButtonAction`', response);
+    });
+  </script>
+</head>
+
+<body>
+  <input type="button" value="Set Right Buttons" onclick="setRightButtons()" />
+  <input type="button" value="nslog" onclick="nslog({'foo': 'foo'})" />
+  <input type="button" value="promise" onclick="promise({'bar': 'bar'})" />
+  <input type="button" value="test callback" onclick="test({'key': 'value'})" />
+  <div id='log'></div>
+</body>
+
+</html>

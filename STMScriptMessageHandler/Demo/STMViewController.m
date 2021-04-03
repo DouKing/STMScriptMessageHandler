@@ -24,6 +24,7 @@ static NSInteger const kRightBarItemBaseTag = 3001;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [STMScriptMessageHandler enableLog];
     [self prepareScriptMessageHandler];
     NSString *path = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
     [self.webView loadHTMLString:[NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil] baseURL:nil];

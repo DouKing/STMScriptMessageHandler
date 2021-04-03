@@ -1,27 +1,37 @@
 //
 //  STMScriptMessageHandler.m
-//  Pods-STMWebViewController_Example
 //
-//  Created by DouKing on 2018/7/31.
+//  Copyright (c) 2021-2025 DouKing (https://github.com/DouKing/)
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+//  THE SOFTWARE.
 //
 
 #import "STMScriptMessageHandler.h"
 #import "STMScriptMessageHandler_JS.h"
-
-#define STM_JS_FUNC(x, ...) [NSString stringWithFormat:@#x ,##__VA_ARGS__]
-#define WEAK_SELF       __weak typeof(self) __weak_self__ = self
-#define STRONG_SELF     __strong typeof(__weak_self__) self = __weak_self__
-
-static NSString * const kSTMApp = @"App";
-static NSString * const kSTMNativeCallback = @"nativeCallback";
-static NSString * const kSTMMethodHandlerReuseKey = @"kSTMMethodHandlerReuseKey";
-static NSString * const kSTMMethodHandlerIMPKey = @"kSTMMethodHandlerIMPKey";
 
 static NSString * const kSTMMessageParameterNameKey = @"handlerName";
 static NSString * const kSTMMessageParameterInfoKey = @"data";
 static NSString * const kSTMMessageParameterResponseKey = @"responseData";
 static NSString * const kSTMMessageParameterCallbackIdKey = @"callbackId";
 static NSString * const kSTMMessageParameterResponseIdKey = @"responseId";
+static NSString * const kSTMMessageParameterResolveIdKey = @"resolveId";
+static NSString * const kSTMMessageParameterReplyKey = @"kSTMMessageParameterReplyKey";
 
 static int gSTMCallbackUniqueId = 1;
 
@@ -36,6 +46,9 @@ static int gSTMCallbackUniqueId = 1;
 @end
 
 @implementation STMScriptMessageHandler
+
+static BOOL gSTMEnableLog = NO;
++ (void)enableLog { gSTMEnableLog = YES; }
 
 - (instancetype)initWithScriptMessageHandlerName:(NSString *)handlerName forWebView:(WKWebView * _Nonnull)webView {
     self = [super init];
@@ -86,6 +99,7 @@ static int gSTMCallbackUniqueId = 1;
 
 //给 js 端发送消息
 - (void)_dispatchMessage:(NSDictionary *)message {
+    [self _debug:@"SEND" parameters:message];
 	NSString *messageJSON = [self _formatParameters:message];
 	NSString* javascriptCommand = [NSString stringWithFormat:@"%@._handleMessageFromObjC('%@');", self.handlerName, messageJSON];
 	[self _evaluateJavaScript:javascriptCommand];
@@ -96,7 +110,8 @@ static int gSTMCallbackUniqueId = 1;
 	if (![message isKindOfClass:NSDictionary.class]) {
 		return;
 	}
-
+    [self _debug:@"RECEIVE" parameters:message];
+    
 	NSString *responseId = message[kSTMMessageParameterResponseIdKey];
 	if (responseId) {
 		STMResponseCallback responseCallback = self.jsResponseHandlers[responseId];
@@ -117,6 +132,20 @@ static int gSTMCallbackUniqueId = 1;
 				};
 			} else {
 				responseCallback = ^(id responseData){
+                    if (!responseData) {
+                        responseData = [NSNull null];
+                    }
+                    void (^replyHandler)(id _Nullable reply, NSString *_Nullable errorMessage) = message[kSTMMessageParameterReplyKey];
+                    NSString *resolveId = message[kSTMMessageParameterResolveIdKey];
+                    if (replyHandler) {
+                        [self _debug:@"SEND" parameters:responseData];
+                        replyHandler(responseData, nil);
+                    } else if (resolveId) {
+                        [self _dispatchMessage:@{
+                            kSTMMessageParameterResponseIdKey: resolveId,
+                            kSTMMessageParameterResponseKey: responseData,
+                        }];
+                    }
 				};
 			}
 		}
@@ -145,7 +174,7 @@ static int gSTMCallbackUniqueId = 1;
         [self.webView evaluateJavaScript:javaScriptString completionHandler:^(id _Nullable info, NSError * _Nullable error) {
             __strong typeof(__weak_self__) self = __weak_self__;
             if (error) {
-				NSLog(@"Error: %@", error);
+                [self _log:[NSString stringWithFormat:@"Error: %@", error]];
                 [self.webView reload];
             }
         }];
@@ -160,9 +189,9 @@ static int gSTMCallbackUniqueId = 1;
 }
 
 - (NSString *)_formatParameters:(NSDictionary *)parameters {
-    NSString *formatParameter = nil;;
+    NSString *formatParameter = nil;
     if ([NSJSONSerialization isValidJSONObject:parameters]) {
-        NSData *data = [NSJSONSerialization dataWithJSONObject:parameters options:NSJSONWritingPrettyPrinted error:nil];
+        NSData *data = [NSJSONSerialization dataWithJSONObject:parameters options:0 error:nil];
         formatParameter = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     } else {
         formatParameter = parameters.description;
@@ -178,10 +207,16 @@ static int gSTMCallbackUniqueId = 1;
     return formatParameter;
 }
 
-- (void)_debug:(NSString *)name method:(NSString *)method parameters:(NSDictionary *)parameters {
+- (void)_debug:(NSString *)action parameters:(NSDictionary *)parameters {
 #ifdef DEBUG
-    NSString *debug = STM_JS_FUNC([%@] %@: %@, name, method, parameters);
-    NSLog(@"%@", debug);
+    if (!gSTMEnableLog) { return; }
+    NSLog(@"[%@] %@: %@", self.handlerName, action, parameters);
+#endif
+}
+
+- (void)_log:(NSString *)message {
+#ifdef DEBUG
+    NSLog(@"[%@] %@", self.handlerName, message);
 #endif
 }
 
@@ -190,6 +225,16 @@ static int gSTMCallbackUniqueId = 1;
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
     if (![message.name isEqualToString:self.handlerName]) { return; }
 	[self _flushReceivedMessage:message.body];
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable reply, NSString *_Nullable errorMessage))replyHandler API_AVAILABLE(macos(11.0), ios(14.0)) {
+    if (![message.name isEqualToString:self.handlerName]) { return; }
+    
+    NSMutableDictionary *parameters = [message.body mutableCopy];
+    parameters[kSTMMessageParameterReplyKey] = replyHandler ?: ^(id _Nullable reply, NSString *_Nullable errorMessage){
+        [self _log:@"reply handler is nil"];
+    };
+    [self _flushReceivedMessage:parameters];
 }
 
 #pragma mark - setter & getter

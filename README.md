@@ -3,11 +3,15 @@
 
 # STMScriptMessageHandler
 
-![capture](./Capture.gif)
+<img src="./Capture.gif" style="float:right">
 
+The `STMScriptMessageHandler` is used to comunicate with js for `WKWebView`. It implements `WKScriptMessageHandler` and `WKScriptMessageHandlerWithReply` protocol. A `STMScriptMessageHandler` corresponding a js object. When your `WKWebView` add a `STMScriptMessageHandler`, the js side add a object on the window automatically. The  handlerName of `STMScriptMessageHandler` is the js object's name.
 
-The `STMScriptMessageHandler` is used to comunicate with js for `WKWebView`. It implements `WKScriptMessageHandler` protocol. A `STMScriptMessageHandler` corresponding a js object. When your `WKWebView` add a `STMScriptMessageHandler`, the js side add a object automatically. The  handlerName of `STMScriptMessageHandler` is the js object's name.
+## Features
 
+- [x] Support multi message handlers
+- [x] Support Promise
+- [x] Compatible with `WebViewJavascriptBridge`
 
 ## Requirements
 
@@ -15,7 +19,7 @@ iOS 8.0+
 
 ## Usage
 
-- Native side
+#### Native side
 
 ```objectivec
 
@@ -33,12 +37,12 @@ STMScriptMessageHandler *page = [[STMScriptMessageHandler alloc] initWithScriptM
 
 ```
 
-- JS side
+#### JS side
 
 ```javascript
 // Use js object `window.Bridge` call native method or register method for native.
-window.Bridge.callMethod('testNativeMethod', {foo:'foo1', bar: 'bar1'}, function(data){
-    log('JS got native `testNativeMethod` response', data);
+window.Bridge.callHandler('nslog', data, function (data) {
+    log('JS got native `nslog` response', data);
 });
 
 window.Bridge.registerMethod('log', function(data, callback){
@@ -46,7 +50,29 @@ window.Bridge.registerMethod('log', function(data, callback){
     log('Native calling js method `log`', message);
     callback({key: 'from js', value: 'something'});
 });
-                        
+
+// Support Promise
+async function promise(data) {
+    // window.Bridge.callHandler('nslog', data).then(
+    //     result => log('JS got native `nslog` response', result),
+    //     error => log('JS got native `nslog` error', error)
+    // )
+
+    var p = window.Bridge.callHandler('nslog', data);
+    var result = await p;
+    log('JS got native `nslog` response', result);
+}
+```
+
+#### Migrate from `WebViewJavascriptBridge`
+
+If you register a message handler named `WebViewJavascriptBridge` at native side, the js side dones not need modify any code.
+
+```objectivec
+
+// The bridge's name is `WebViewJavascriptBridge`
+self.bridge = [self.webView stm_addScriptMessageHandlerUseName:@"WebViewJavascriptBridge"];
+
 ```
 
 ## Installation
