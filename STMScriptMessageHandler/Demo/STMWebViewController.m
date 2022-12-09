@@ -10,7 +10,7 @@
 static NSString * const kMDFWebViewObserverKeyPathTitle = @"title";
 static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimatedProgress";
 
-@interface STMWebViewController ()<WKUIDelegate>
+@interface STMWebViewController ()<WKUIDelegate, WKNavigationDelegate>
 
 @property (nonatomic, strong, readwrite) WKWebView *webView;
 
@@ -40,6 +40,7 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     [super viewDidLoad];
     [self.view addSubview:self.webView];
     [self.view addSubview:self.progressView];
+    [self _copyNSHTTPCookieStorageToWKWebViewWithCompletionHandler:nil];
 }
 
 - (void)viewDidLayoutSubviews {
@@ -75,6 +76,140 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     } else {
         self.progressView.alpha = alpha;
     }
+}
+
+#pragma mark cookies
+/**
+ cookie持久化路径 NSLibraryDirectory
+ .../Library/Cookies/
+    Cookie.binarycookies    WKWebview
+    <appid>.binarycookies   NSHTTPCookieStorage
+ 
+ session级别的cookie
+    WKProcessPool
+ */
+
+- (void)_copyNSHTTPCookieStorageToWKWebViewWithCompletionHandler:(nullable void (^)(void))completionHandler; {
+    if (@available(iOS 11.0, *)) {
+        NSArray<NSHTTPCookie *> *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
+        WKHTTPCookieStore *cookieStroe = self.webView.configuration.websiteDataStore.httpCookieStore;
+        if (cookies.count == 0) {
+            !completionHandler ?: completionHandler();
+            return;
+        }
+        for (NSHTTPCookie *cookie in cookies) {
+            [cookieStroe setCookie:cookie completionHandler:^{
+                if ([[cookies lastObject] isEqual:cookie]) {
+                    !completionHandler ?: completionHandler();
+                    return;
+                }
+            }];
+        }
+    } else {
+        NSString *cookiestring = [self _formatCookies:[[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]];
+        WKUserScript *cookieScript = [[WKUserScript alloc] initWithSource:cookiestring
+                                                            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                         forMainFrameOnly:NO];
+        [self.webView.configuration.userContentController addUserScript:cookieScript];
+        !completionHandler ?: completionHandler();
+    }
+}
+
+- (void)_syncCookiesToRequest:(NSMutableURLRequest *)request {
+    if (!request.URL) {
+        return;
+    }
+    
+    void (^block)(NSArray<NSHTTPCookie *> *) = ^(NSArray<NSHTTPCookie *> *availableCookie){
+        if (availableCookie.count > 0) {
+            NSDictionary *reqHeader = [NSHTTPCookie requestHeaderFieldsWithCookies:availableCookie];
+            NSString *cookieStr = [reqHeader objectForKey:@"Cookie"];
+            [request setValue:cookieStr forHTTPHeaderField:@"Cookie"];
+        }
+    };
+    
+    if (@available(iOS 11.0, *)) {
+        WKHTTPCookieStore *cookieStroe = self.webView.configuration.websiteDataStore.httpCookieStore;
+        [cookieStroe getAllCookies:^(NSArray<NSHTTPCookie *> * _Nonnull availableCookie) {
+            block(availableCookie);
+        }];
+    } else {
+        NSArray<NSHTTPCookie *> *availableCookie = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:request.URL];
+        block(availableCookie);
+    }
+}
+
+
+- (void)_clearCookies {
+    NSArray *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
+    for (NSHTTPCookie *cookie in cookies) {
+        [[NSHTTPCookieStorage sharedHTTPCookieStorage] deleteCookie:cookie];
+    }
+    
+    if (@available(iOS 11.0, *)) {
+        WKHTTPCookieStore *cookieStroe = self.webView.configuration.websiteDataStore.httpCookieStore;
+        [cookieStroe getAllCookies:^(NSArray<NSHTTPCookie *> * _Nonnull cookies) {
+            for (NSHTTPCookie *cookie in cookies) {
+                [cookieStroe deleteCookie:cookie completionHandler:^{
+                    NSLog(@"[STMWebViewController] WKWebView 清除cookie %@", cookie.name);
+                }];
+            }
+        }];
+    }
+}
+
+- (void)clearWKWebViewCache {
+    NSString *libraryDir = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *bundleId  =  [[NSBundle mainBundle] infoDictionary][@"CFBundleIdentifier"];
+    NSString *webkitFolderInLib = [NSString stringWithFormat:@"%@/WebKit", libraryDir];
+    NSString *webKitFolderInCaches = [NSString stringWithFormat:@"%@/Caches/%@/WebKit", libraryDir, bundleId];
+    NSError *error = nil;
+    [[NSFileManager defaultManager] removeItemAtPath:webKitFolderInCaches error:&error];
+    [[NSFileManager defaultManager] removeItemAtPath:webkitFolderInLib error:nil];
+    
+    if (@available(iOS 9.0, *)) {
+        WKWebsiteDataStore *dataStore = [WKWebsiteDataStore defaultDataStore];
+        [dataStore fetchDataRecordsOfTypes:[WKWebsiteDataStore allWebsiteDataTypes]
+                         completionHandler:^(NSArray<WKWebsiteDataRecord *> * _Nonnull records) {
+            for (WKWebsiteDataRecord *record in records) {
+                [dataStore removeDataOfTypes:record.dataTypes forDataRecords:@[record] completionHandler:^{
+                    NSLog(@"[STMWebViewController] WKWebView 清除缓存 %@", record.displayName);
+                }];
+            }
+        }];
+    }
+}
+
+- (NSString *)_formatCookies:(NSArray<NSHTTPCookie *> *)cookies {
+    NSMutableString *cookieScript = [NSMutableString string];
+    for (NSHTTPCookie *cookie in cookies) {
+        // Skip cookies that will break our script
+        if ([cookie.value rangeOfString:@"'"].location != NSNotFound) {
+            continue;
+        }
+        // Create a line that appends this cookie to the web view's document's cookies
+        [cookieScript appendFormat:@"document.cookie='%@=%@;", cookie.name, cookie.value];
+        if (cookie.domain || cookie.domain.length > 0) {
+            [cookieScript appendFormat:@"domain=%@;", cookie.domain];
+        }
+        if (cookie.path || cookie.path.length > 0) {
+            [cookieScript appendFormat:@"path=%@;", cookie.path];
+        }
+        if (cookie.expiresDate) {
+            [cookieScript appendFormat:@"expires=%@;", [[self cookieDateFormatter] stringFromDate:cookie.expiresDate]];
+        }
+        if (cookie.secure) {
+            [cookieScript appendString:@"Secure;"];
+        }
+        if (cookie.HTTPOnly) {
+            // 保持 native 的 cookie 完整性，当 HTTPOnly 时，不能通过 document.cookie 来读取该 cookie。
+            [cookieScript appendString:@"HTTPOnly;"];
+        }
+        [cookieScript appendFormat:@"'\n"];
+    }
+    
+    // document.cookie='%@=%@;domain=%@;path=%@;expires=%@;Secure;HTTPOnly;'
+    return cookieScript;
 }
 
 #pragma mark - Delegates & Notifications
@@ -116,6 +251,16 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     [self presentViewController:alert animated:YES completion:nil];
 }
 
+#pragma mark - WKNavigationDelegate
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    // 302
+    if ([navigationAction.request isKindOfClass:[NSMutableURLRequest class]]) {
+        [self _syncCookiesToRequest:(NSMutableURLRequest *)navigationAction.request];
+    }
+    decisionHandler(WKNavigationActionPolicyAllow);
+}
+
 #pragma mark - setter & getter
 
 - (WKWebView *)webView {
@@ -133,9 +278,11 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
         config.allowsInlineMediaPlayback = YES;
         config.userContentController = userContentController;
         config.preferences = preferences;
+        config.processPool = [self processPool];
 
         _webView = [[WKWebView alloc] initWithFrame:CGRectZero configuration:config];
         _webView.UIDelegate = self;
+        _webView.navigationDelegate = self;
     }
     return _webView;
 }
@@ -147,6 +294,27 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
         _progressView.trackTintColor = [UIColor lightGrayColor];
     }
     return _progressView;
+}
+
+- (WKProcessPool *)processPool {
+    static WKProcessPool *pool = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        pool = [[WKProcessPool alloc] init];
+    });
+    return pool;
+}
+
+- (NSDateFormatter *)cookieDateFormatter {
+    static NSDateFormatter *formatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        // expires=Mon, 01 Aug 2050 06:44:35 GMT
+        formatter = [NSDateFormatter new];
+        formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+        formatter.dateFormat = @"EEE, d MMM yyyy HH:mm:ss zzz";
+    });
+    return formatter;
 }
 
 @end
