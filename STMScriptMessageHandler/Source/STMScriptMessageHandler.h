@@ -33,6 +33,7 @@ typedef void (^STMHandler)(id data, STMResponseCallback _Nullable responseCallba
 @interface STMScriptMessageHandler : NSObject<WKScriptMessageHandler, WKScriptMessageHandlerWithReply>
 
 @property (nonatomic, copy, readonly) NSString *handlerName;
+@property (nullable, nonatomic, copy) void (^didReceiveScriptMessage)(id message);
 
 + (void)enableLog;
 

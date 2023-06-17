@@ -89,7 +89,7 @@ static NSString * const kMDFWebViewObserverKeyPathEstimatedProgress = @"estimate
     WKProcessPool
  */
 
-- (void)_copyNSHTTPCookieStorageToWKWebViewWithCompletionHandler:(nullable void (^)(void))completionHandler; {
+- (void)_copyNSHTTPCookieStorageToWKWebViewWithCompletionHandler:(nullable void (^)(void))completionHandler {
     if (@available(iOS 11.0, *)) {
         NSArray<NSHTTPCookie *> *cookies = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies];
         WKHTTPCookieStore *cookieStroe = self.webView.configuration.websiteDataStore.httpCookieStore;

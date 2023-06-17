@@ -224,11 +224,13 @@ static BOOL gSTMEnableLog = NO;
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
     if (![message.name isEqualToString:self.handlerName]) { return; }
+    !self.didReceiveScriptMessage ?: self.didReceiveScriptMessage(message.body);
 	[self _flushReceivedMessage:message.body];
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable reply, NSString *_Nullable errorMessage))replyHandler API_AVAILABLE(macos(11.0), ios(14.0)) {
     if (![message.name isEqualToString:self.handlerName]) { return; }
+    !self.didReceiveScriptMessage ?: self.didReceiveScriptMessage(message.body);
     
     NSMutableDictionary *parameters = [message.body mutableCopy];
     parameters[kSTMMessageParameterReplyKey] = replyHandler ?: ^(id _Nullable reply, NSString *_Nullable errorMessage){
