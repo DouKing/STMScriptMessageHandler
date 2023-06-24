@@ -151,6 +151,7 @@ static BOOL gSTMEnableLog = NO;
 		}
 		STMHandler handler = self.methodHandlers[message[kSTMMessageParameterNameKey]];
 		if (!handler) {
+            responseCallback(@{});
 			return;
 		}
 		handler(message[kSTMMessageParameterInfoKey], responseCallback);
