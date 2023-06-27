@@ -62,7 +62,11 @@ void _STMObjcSwizzMethod(Class aClass, SEL originSelector, SEL swizzSelector);
 - (void)_stm_addScriptMessageHandler:(__kindof STMScriptMessageHandler *)messageHandler {
     WKUserContentController *userContentController = self.configuration.userContentController;
     [userContentController removeScriptMessageHandlerForName:messageHandler.handlerName];
+#if TARHET_OS_MAC
+    if (@available(macOS 11.0, *)) {
+#else
     if (@available(iOS 14.0, *)) {
+#endif
         [userContentController addScriptMessageHandlerWithReply:messageHandler
                                                    contentWorld:WKContentWorld.pageWorld
                                                            name:messageHandler.handlerName];
